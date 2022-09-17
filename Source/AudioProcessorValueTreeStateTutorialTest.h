@@ -235,10 +235,6 @@ public:
         : AudioProcessorEditor (parent),
           valueTreeState (vts)
     {
-        header.setColour (juce::TextButton::buttonColourId, juce::Colours::cornflowerblue);
-        header.setButtonText ("Header");
-        addAndMakeVisible (header);
-        
         addChildComponent(cloud);
         addAndMakeVisible (plugin);
         
@@ -262,14 +258,11 @@ public:
     void resized() override
     {
         auto area = getLocalBounds();
+
         auto headerHeight = area.removeFromTop (36);
-        
-        auto headerFooterHeight = 36;
-        header.setBounds (area.removeFromTop    (headerFooterHeight));
-        
         showCloud.setBounds (headerHeight.removeFromLeft (300));
         showPlugin.setBounds (headerHeight);
-        cloud->setBounds (headerHeight.removeFromLeft (300));
+        cloud->setBounds (area.removeFromTop (100));
         plugin->setBounds (area.removeFromTop (100));
     }
 
@@ -284,7 +277,6 @@ private:
     juce::TextButton showCloud;
     CloudComponent* cloud = new CloudComponent(valueTreeState);
     PluginComponent* plugin = new PluginComponent(valueTreeState);
-    juce::TextButton header;
 };
 
 
