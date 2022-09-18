@@ -157,14 +157,22 @@ public:
             if(cloudSettings[i].getProperty("id", "") != ""){
                 settingsList.addItem (cloudSettings[i].getProperty("project", "--").toString(), (int) cloudSettings[i].getProperty("id", 0));
             }
+        
+        authorizationCode.setSize(100, 50);
+        addAndMakeVisible (authorizationCode);
+        
+        loginButton.setButtonText("Log in");
+        loginButton.setSize(100, 50);
+        loginButton.onClick = [this] {loginRequest();};
+        addAndMakeVisible (loginButton);
 
         settingsList.setSize(200, 40);
         settingsList.setSelectedId(1);
         
-        saveButton.setButtonText("Load Configuration");
-        saveButton.setSize(100, 50);
-        saveButton.onClick = [this] {stringToXml();};
-        addAndMakeVisible (saveButton);
+        loadButton.setButtonText("Load Configuration");
+        loadButton.setSize(100, 50);
+        loadButton.onClick = [this] {stringToXml();};
+        addAndMakeVisible (loadButton);
 
         setSize (200,200);
     }
@@ -208,19 +216,51 @@ public:
     void resized() override
     {
         auto area = getLocalBounds();
+        authorizationCode.setBounds (area.removeFromTop(50));
+        loginButton.setBounds (area.removeFromTop(50));
         settingsList.setBounds (area.removeFromTop(50));
-        saveButton.setBounds (area.removeFromTop(50));
+        loadButton.setBounds (area.removeFromTop(50));
     }
 
     void paint (juce::Graphics& g) override
     {
         g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
     }
+    
+    void loginRequest ()
+    {
+        juce::String authCode = authorizationCode.getTextValue().toString();
+        adamski::RestRequest request;
+        request.header("Content-Type", "application/x-www-form-urlencoded");
+        request.header("Authorization", "Basic M2hobDc5bDlrOGMyNTgxNGVwYjhocHVyZm06bTRvZDhnMGlxaGRpZTZwNWpuN29oMHVyNHB2ZG90bDdrYm9sNHJlZDVtdjlxMG9zdjQy");
+        adamski::RestRequest::Response response = request
+        .post ("https://adc.auth.us-west-2.amazoncognito.com/oauth2/token?grant_type=authorization_code&client_id=3hhl79l9k8c25814epb8hpurfm&code=" + authCode + "&redirect_uri=http://localhost")
+        .execute();
+        juce::String access_token = response.body.getProperty("access_token", "").toString();
+        juce::String userName = userInfoRequest(access_token);
+        
+        DBG("-------USER NAME---------");
+        DBG(userName);
+        DBG("--------USER NAME--------");
+    }
+    
+    juce::String userInfoRequest (juce::String access_token)
+    {
+        adamski::RestRequest request;
+        request.header("Content-Type", "application/x-www-form-urlencoded");
+        request.header("Authorization", "Bearer " + access_token);
+        adamski::RestRequest::Response response = request
+        .get ("https://adc.auth.us-west-2.amazoncognito.com/oauth2/userInfo")
+        .execute();
+        return response.body.getProperty("username", "").toString();
+    }
 
 private:
     juce::AudioProcessorValueTreeState& valueTreeState;
     juce::ComboBox settingsList;
-    juce::TextButton saveButton;
+    juce::TextButton loadButton;
+    juce::TextEditor authorizationCode;
+    juce::TextButton loginButton;
 };
 
 class GenericEditor : public juce::AudioProcessorEditor
