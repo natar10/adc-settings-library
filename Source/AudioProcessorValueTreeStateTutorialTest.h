@@ -76,6 +76,9 @@ public:
         saveButton.onClick = [this] {makeHttpRequest();};
         addAndMakeVisible (saveButton);
         
+        settingName.setSize(100, 50);
+        addAndMakeVisible (settingName);
+        
         invertButton.setButtonText ("Invert Phase");
         addAndMakeVisible (invertButton);
         invertAttachment.reset (new ButtonAttachment (valueTreeState, "invertPhase", invertButton));
@@ -85,13 +88,13 @@ public:
     
     void makeHttpRequest ()
     {
-        Uuid uuid;
+        juce::Random random;
         juce:String settingXml = valueTreeState.state.toXmlString();
         adamski::RestRequest request;
         request.header("Content-Type", "application/json");
-        request.field("id", uuid.toString());
+        request.field("id", String(random.nextInt()));
         request.field("user", "nr");
-        request.field("project", "adc");
+        request.field("project", settingName.getTextValue().toString());
         request.field("group", "tests");
         request.field("xml", settingXml);
         request.field("settings", "foo");
@@ -110,6 +113,7 @@ public:
         gainLabel .setBounds (gainRect.removeFromLeft (paramLabelWidth));
         gainSlider.setBounds (gainRect);
         saveButton.setBounds (area.removeFromBottom(50));
+        settingName.setBounds (area.removeFromBottom(50));
 
         invertButton.setBounds (area.removeFromTop (paramControlHeight));
     }
@@ -125,6 +129,7 @@ private:
     juce::Label gainLabel;
     juce::Slider gainSlider;
     juce::TextButton saveButton;
+    juce::TextEditor settingName;
     std::unique_ptr<SliderAttachment> gainAttachment;
 
     juce::ToggleButton invertButton;
@@ -150,10 +155,10 @@ public:
         
         for (int i = 0; i < cloudSettings.size(); ++i)
             if(cloudSettings[i].getProperty("id", "") != ""){
-                settingsList.addItem (cloudSettings[i].getProperty("project", "d").toString(), (int) cloudSettings[i].getProperty("id", 0));
+                settingsList.addItem (cloudSettings[i].getProperty("project", "--").toString(), (int) cloudSettings[i].getProperty("id", 0));
             }
 
-        settingsList.setSize(400, 40);
+        settingsList.setSize(200, 40);
         settingsList.setSelectedId(1);
         
         saveButton.setButtonText("Load Configuration");
@@ -203,8 +208,8 @@ public:
     void resized() override
     {
         auto area = getLocalBounds();
-        saveButton.setBounds (area.removeFromBottom(50));
-        settingsList.setBounds (area.removeFromBottom(100));
+        settingsList.setBounds (area.removeFromTop(50));
+        saveButton.setBounds (area.removeFromTop(50));
     }
 
     void paint (juce::Graphics& g) override
@@ -235,35 +240,23 @@ public:
         : AudioProcessorEditor (parent),
           valueTreeState (vts)
     {
-        addChildComponent(cloud);
+        addAndMakeVisible(cloud);
         addAndMakeVisible (plugin);
         
-        showCloud.setButtonText("Cloud Storage");
-        showCloud.onClick = [this] {toogleView();};
+        showCloud.setButtonText("Serverless Settings");
         addAndMakeVisible (showCloud);
-        
-        showPlugin.setButtonText("Gain Plugin");
-        showPlugin.onClick = [this] {toogleView();};
-        addAndMakeVisible (showPlugin);
 
         setSize (500, 400);
-    }
-    
-    void toogleView ()
-    {
-        cloud->setVisible(!cloud->isVisible());
-        plugin->setVisible(!plugin->isVisible());
     }
 
     void resized() override
     {
         auto area = getLocalBounds();
-
         auto headerHeight = area.removeFromTop (36);
-        showCloud.setBounds (headerHeight.removeFromLeft (300));
-        showPlugin.setBounds (headerHeight);
-        cloud->setBounds (area.removeFromTop (100));
-        plugin->setBounds (area.removeFromTop (100));
+        auto fromTop = area.removeFromTop (200);
+        showCloud.setBounds (headerHeight);
+        cloud->setBounds (fromTop.removeFromLeft (200));
+        plugin->setBounds (fromTop);
     }
 
     void paint (juce::Graphics& g) override
@@ -273,10 +266,10 @@ public:
 
 private:
     juce::AudioProcessorValueTreeState& valueTreeState;
-    juce::TextButton showPlugin;
     juce::TextButton showCloud;
     CloudComponent* cloud = new CloudComponent(valueTreeState);
     PluginComponent* plugin = new PluginComponent(valueTreeState);
+    
 };
 
 
