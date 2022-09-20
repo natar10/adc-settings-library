@@ -142,17 +142,22 @@ class XMLSetting {
     juce::String project;
 };
 
-class CloudComponent : public juce::Component
+class CloudComponent : public juce::Component, public ValueTree::Listener
 {
 public:
-    CloudComponent (juce::AudioProcessorValueTreeState& vts)
-        : valueTreeState (vts)
+    CloudComponent (juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr)
+        : valueTreeState (vts), tree(tr)
     {
         addAndMakeVisible (settingsList);
+        
+        addAndMakeVisible (userName);
+        checkLogin();
+        
+        tree.addListener(this);
+        
         juce::var cloudSettings = getAllSettings();
         DBG(cloudSettings.size());
-        
-        
+
         for (int i = 0; i < cloudSettings.size(); ++i)
             if(cloudSettings[i].getProperty("id", "") != ""){
                 settingsList.addItem (cloudSettings[i].getProperty("project", "--").toString(), (int) cloudSettings[i].getProperty("id", 0));
@@ -213,9 +218,30 @@ public:
 
     }
     
+    void valueTreePropertyChanged (ValueTree& tree,
+                                        const Identifier& property) override
+    {
+        DBG("Property that changed " << property.toString() + " " + tree[property].toString());
+        if(tree.hasProperty("accessToken")){
+            DBG("User Info " << userInfoRequest(tree["accessToken"]));
+            userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
+        }
+    }
+    
+    void checkLogin ()
+    {
+        DBG("*********************" << tree.getNumProperties());
+        if(tree.hasProperty("accessToken")){
+            userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
+        }else{
+            userName.setText("You are not logged in", juce::dontSendNotification);
+        }
+    }
+    
     void resized() override
     {
         auto area = getLocalBounds();
+        userName.setBounds (area.removeFromTop(50));
         authorizationCode.setBounds (area.removeFromTop(50));
         loginButton.setBounds (area.removeFromTop(50));
         settingsList.setBounds (area.removeFromTop(50));
@@ -237,11 +263,17 @@ public:
         .post ("https://adc.auth.us-west-2.amazoncognito.com/oauth2/token?grant_type=authorization_code&client_id=3hhl79l9k8c25814epb8hpurfm&code=" + authCode + "&redirect_uri=http://localhost")
         .execute();
         juce::String access_token = response.body.getProperty("access_token", "").toString();
-        juce::String userName = userInfoRequest(access_token);
-        
-        DBG("-------USER NAME---------");
-        DBG(userName);
-        DBG("--------USER NAME--------");
+        if(tree.isValid()){
+            //ValueTree slaveTree = ValueTree{"slave"};
+            tree.setProperty ("accessToken", access_token, nullptr);
+            String size = tree["accessToken"];
+            
+            DBG("-------USER NAME---------");
+            DBG(size);
+            DBG("--------USER NAME--------");
+        }else{
+            DBG("-------NOT VALID---------");
+        }
     }
     
     juce::String userInfoRequest (juce::String access_token)
@@ -257,10 +289,12 @@ public:
 
 private:
     juce::AudioProcessorValueTreeState& valueTreeState;
+    juce::ValueTree& tree;
     juce::ComboBox settingsList;
     juce::TextButton loadButton;
     juce::TextEditor authorizationCode;
     juce::TextButton loginButton;
+    juce::Label userName;
 };
 
 class GenericEditor : public juce::AudioProcessorEditor
@@ -276,9 +310,9 @@ public:
     typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
     typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 
-    GenericEditor (juce::AudioProcessor& parent, juce::AudioProcessorValueTreeState& vts)
+    GenericEditor (juce::AudioProcessor& parent, juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr)
         : AudioProcessorEditor (parent),
-          valueTreeState (vts)
+          valueTreeState (vts), tree (tr)
     {
         addAndMakeVisible(cloud);
         addAndMakeVisible (plugin);
@@ -306,8 +340,9 @@ public:
 
 private:
     juce::AudioProcessorValueTreeState& valueTreeState;
+    juce::ValueTree& tree;
     juce::TextButton showCloud;
-    CloudComponent* cloud = new CloudComponent(valueTreeState);
+    CloudComponent* cloud = new CloudComponent(valueTreeState, tree);
     PluginComponent* plugin = new PluginComponent(valueTreeState);
     
 };
@@ -362,7 +397,7 @@ public:
     }
 
     //==============================================================================
-    juce::AudioProcessorEditor* createEditor() override          { return new GenericEditor (*this, parameters); }
+    juce::AudioProcessorEditor* createEditor() override          { return new GenericEditor (*this, parameters, tree); }
     bool hasEditor() const override                              { return true; }
 
     //==============================================================================
@@ -397,6 +432,7 @@ public:
 private:
     //==============================================================================
     juce::AudioProcessorValueTreeState parameters;
+    juce::ValueTree tree{"main"};
     float previousGain; // [1]
 
     std::atomic<float>* phaseParameter = nullptr;
