@@ -156,7 +156,6 @@ public:
         tree.addListener(this);
         
         juce::var cloudSettings = getAllSettings();
-        DBG(cloudSettings.size());
 
         for (int i = 0; i < cloudSettings.size(); ++i)
             if(cloudSettings[i].getProperty("id", "") != ""){
@@ -188,49 +187,32 @@ public:
         adamski::RestRequest::Response response = request
         .get ("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/settings")
         .execute();
-        DBG(response.bodyAsString);
-        //juce::Array<XMLSetting> cloudSettings;
-        //juce::var parsed = JSON::parse(response.bodyAsString);
-        //cloudSettings = (juce::Array<XMLSetting>) parsed;
         return response.body;
     }
 
     void stringToXml ()
     {
         int selectedSetting = settingsList.getSelectedId();
-        DBG(std::to_string(selectedSetting));
         adamski::RestRequest request;
         adamski::RestRequest::Response response = request
         .get ("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/settings/object/" + std::to_string(selectedSetting) + "/nr")
         .execute();
         
-        DBG(response.bodyAsString);
-        
         juce::String xmlResponse = response.body.getProperty("xml", "idx").toString();
-        //Array<juce::var> *xmlResponse = response.body.getArray();
-        DBG("----------------");
-        DBG(response.body.getProperty("xml", "idx").toString());
-        DBG("----------------");
-    
-        //juce::String xmlFromResponse = response.headers.getValue("xml", "");
         
         valueTreeState.replaceState (juce::ValueTree::fromXml (xmlResponse));
 
     }
     
-    void valueTreePropertyChanged (ValueTree& tree,
-                                        const Identifier& property) override
+    void valueTreePropertyChanged (ValueTree& tree, const Identifier& property) override
     {
-        DBG("Property that changed " << property.toString() + " " + tree[property].toString());
         if(tree.hasProperty("accessToken")){
-            DBG("User Info " << userInfoRequest(tree["accessToken"]));
             userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
         }
     }
     
     void checkLogin ()
     {
-        DBG("*********************" << tree.getNumProperties());
         if(tree.hasProperty("accessToken")){
             userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
         }else{
@@ -264,15 +246,8 @@ public:
         .execute();
         juce::String access_token = response.body.getProperty("access_token", "").toString();
         if(tree.isValid()){
-            //ValueTree slaveTree = ValueTree{"slave"};
             tree.setProperty ("accessToken", access_token, nullptr);
             String size = tree["accessToken"];
-            
-            DBG("-------USER NAME---------");
-            DBG(size);
-            DBG("--------USER NAME--------");
-        }else{
-            DBG("-------NOT VALID---------");
         }
     }
     
@@ -395,6 +370,30 @@ public:
             previousGain = currentGain;
         }
     }
+    
+    void exportValueTreeToXML()
+    {
+        File newPreset (desktopDir.getFullPathName() + "/saveData.xml");
+        
+        if (!newPreset.exists())
+            newPreset.create();
+
+        std::unique_ptr<juce::XmlElement> vtXML (tree.createXml());
+        if(!(vtXML -> writeTo(newPreset)))
+            DBG("FAIL");
+        
+    }
+
+    void loadXMLfromFile()
+    {
+        File readFrom(desktopDir.getChildFile ("saveData.xml"));
+        if(readFrom.existsAsFile())
+        {
+            XmlDocument xmlDoc (readFrom);
+            if (auto mainElement = xmlDoc.getDocumentElement())
+                tree = tree.fromXml(*mainElement);
+        }
+    }
 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override          { return new GenericEditor (*this, parameters, tree); }
@@ -417,10 +416,10 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override
     {
         auto state = parameters.copyState();
-        state.removeChild(2, nullptr);
-        state.addChild(tree, 2, nullptr);
         std::unique_ptr<juce::XmlElement> xml (state.createXml());
         copyXmlToBinary (*xml, destData);
+        if(tree.hasProperty("accessToken"))
+            exportValueTreeToXML();
     }
 
     void setStateInformation (const void* data, int sizeInBytes) override
@@ -429,9 +428,7 @@ public:
         if (xmlState.get() != nullptr)
             if (xmlState->hasTagName (parameters.state.getType()))
                 parameters.replaceState (juce::ValueTree::fromXml (*xmlState));
-                tree = tree.fromXml(*xmlState->getChildElement(2));
-                DBG("-----xmlState-----");
-                DBG(xmlState->toString());
+                loadXMLfromFile();
     }
 
 private:
@@ -442,6 +439,7 @@ private:
 
     std::atomic<float>* phaseParameter = nullptr;
     std::atomic<float>* gainParameter  = nullptr;
+    juce::File desktopDir = File::getSpecialLocation(File::userDesktopDirectory);
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TutorialProcessor)
