@@ -417,6 +417,8 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override
     {
         auto state = parameters.copyState();
+        state.removeChild(2, nullptr);
+        state.addChild(tree, 2, nullptr);
         std::unique_ptr<juce::XmlElement> xml (state.createXml());
         copyXmlToBinary (*xml, destData);
     }
@@ -427,6 +429,9 @@ public:
         if (xmlState.get() != nullptr)
             if (xmlState->hasTagName (parameters.state.getType()))
                 parameters.replaceState (juce::ValueTree::fromXml (*xmlState));
+                tree = tree.fromXml(*xmlState->getChildElement(2));
+                DBG("-----xmlState-----");
+                DBG(xmlState->toString());
     }
 
 private:
