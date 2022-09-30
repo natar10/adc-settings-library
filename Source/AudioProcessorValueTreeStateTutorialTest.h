@@ -148,6 +148,14 @@ public:
     CloudComponent (juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr)
         : valueTreeState (vts), tree(tr)
     {
+        welcome.setText("Login here to sync your settings in the cloud", juce::dontSendNotification);
+        addAndMakeVisible (welcome);
+        
+        initialLoginButton.setButtonText("Log in");
+        initialLoginButton.setSize(100, 50);
+        initialLoginButton.onClick = [this] {loginRequest();};
+        addAndMakeVisible (initialLoginButton);
+        
         addAndMakeVisible (settingsList);
         
         addAndMakeVisible (userName);
@@ -213,8 +221,15 @@ public:
     
     void checkLogin ()
     {
+        DBG("Tree" << tree.getProperty("accessToken").toString());
         if(tree.hasProperty("accessToken")){
-            userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
+            
+            String userInfo = userInfoRequest(tree["accessToken"]);
+            if(userInfo == "Request Error"){
+                userName.setText("Please Login", juce::dontSendNotification);
+            }else{
+                userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
+            }
         }else{
             userName.setText("You are not logged in", juce::dontSendNotification);
         }
@@ -228,6 +243,8 @@ public:
         loginButton.setBounds (area.removeFromTop(50));
         settingsList.setBounds (area.removeFromTop(50));
         loadButton.setBounds (area.removeFromTop(50));
+        initialLoginButton.setBounds (area.removeFromTop(50));
+        welcome.setBounds (area.removeFromTop(50));
     }
 
     void paint (juce::Graphics& g) override
@@ -242,12 +259,16 @@ public:
         request.header("Content-Type", "application/x-www-form-urlencoded");
         request.header("Authorization", "Basic M2hobDc5bDlrOGMyNTgxNGVwYjhocHVyZm06bTRvZDhnMGlxaGRpZTZwNWpuN29oMHVyNHB2ZG90bDdrYm9sNHJlZDVtdjlxMG9zdjQy");
         adamski::RestRequest::Response response = request
-        .post ("https://adc.auth.us-west-2.amazoncognito.com/oauth2/token?grant_type=authorization_code&client_id=3hhl79l9k8c25814epb8hpurfm&code=" + authCode + "&redirect_uri=http://localhost")
+        .post ("https://adc.auth.us-west-2.amazoncognito.com/oauth2/token?grant_type=authorization_code&client_id=3hhl79l9k8c25814epb8hpurfm&code=" + authCode + "&redirect_uri=http://localhost:3000/profile/code-generator/")
         .execute();
         juce::String access_token = response.body.getProperty("access_token", "").toString();
+        juce::String id_token = response.body.getProperty("id_token", "").toString();
+        juce::String refresh_token = response.body.getProperty("refresh_token", "").toString();
+        
         if(tree.isValid()){
             tree.setProperty ("accessToken", access_token, nullptr);
-            String size = tree["accessToken"];
+            tree.setProperty ("idToken", id_token, nullptr);
+            tree.setProperty ("refreshToken", refresh_token, nullptr);
         }
     }
     
@@ -259,7 +280,12 @@ public:
         adamski::RestRequest::Response response = request
         .get ("https://adc.auth.us-west-2.amazoncognito.com/oauth2/userInfo")
         .execute();
-        return response.body.getProperty("username", "").toString();
+        
+        if(response.status == 200){
+            return response.body.getProperty("username", "").toString();
+        }else{
+            return "Request Error";
+        }
     }
 
 private:
@@ -270,6 +296,8 @@ private:
     juce::TextEditor authorizationCode;
     juce::TextButton loginButton;
     juce::Label userName;
+    juce::TextButton initialLoginButton;
+    juce::Label welcome;
 };
 
 class GenericEditor : public juce::AudioProcessorEditor
