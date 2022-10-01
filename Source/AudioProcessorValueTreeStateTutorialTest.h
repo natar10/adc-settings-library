@@ -238,8 +238,9 @@ public:
     {
         int selectedSetting = settingsList.getSelectedId();
         adamski::RestRequest request;
+        request.header("Authorization", "Bearer " + tree.getProperty("idToken").toString());
         adamski::RestRequest::Response response = request
-        .get ("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/settings/object/" + std::to_string(selectedSetting) + "/nr")
+        .get ("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/settings/object/" + std::to_string(selectedSetting))
         .execute();
         
         juce::String xmlResponse = response.body.getProperty("xml", "idx").toString();
