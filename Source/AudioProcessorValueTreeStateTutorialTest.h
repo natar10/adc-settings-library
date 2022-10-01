@@ -83,7 +83,7 @@ public:
         addAndMakeVisible (invertButton);
         invertAttachment.reset (new ButtonAttachment (valueTreeState, "invertPhase", invertButton));
 
-        setSize (400, 200);
+        setSize (400, 400);
     }
     
     void makeHttpRequest ()
@@ -148,50 +148,86 @@ public:
     CloudComponent (juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr)
         : valueTreeState (vts), tree(tr)
     {
+        checkLogin();
+        setSize(200, 400);
+    }
+    
+    void addLoginComponents ()
+    {
         welcome.setText("Login here to sync your settings in the cloud", juce::dontSendNotification);
         addAndMakeVisible (welcome);
         
         initialLoginButton.setButtonText("Log in");
         initialLoginButton.setSize(100, 50);
-        initialLoginButton.onClick = [this] {loginRequest();};
+        initialLoginButton.onClick = [this] {makeLoginVisible();};
         addAndMakeVisible (initialLoginButton);
-        
-        addAndMakeVisible (settingsList);
-        
         addAndMakeVisible (userName);
-        checkLogin();
-        
         tree.addListener(this);
+
+        authorizationCode.setSize(100, 50);
+        addChildComponent (authorizationCode);
         
+        loginButton.setButtonText("Log in");
+        loginButton.setSize(100, 50);
+        loginButton.onClick = [this] {loginRequest();};
+        addChildComponent (loginButton);
+    }
+    
+    void addCloudComponents (){
+        addChildComponent (settingsList);
         juce::var cloudSettings = getAllSettings();
+        
+        settingsList.clear();
 
         for (int i = 0; i < cloudSettings.size(); ++i)
             if(cloudSettings[i].getProperty("id", "") != ""){
                 settingsList.addItem (cloudSettings[i].getProperty("project", "--").toString(), (int) cloudSettings[i].getProperty("id", 0));
             }
         
-        authorizationCode.setSize(100, 50);
-        addAndMakeVisible (authorizationCode);
-        
-        loginButton.setButtonText("Log in");
-        loginButton.setSize(100, 50);
-        loginButton.onClick = [this] {loginRequest();};
-        addAndMakeVisible (loginButton);
-
         settingsList.setSize(200, 40);
         settingsList.setSelectedId(1);
         
         loadButton.setButtonText("Load Configuration");
         loadButton.setSize(100, 50);
         loadButton.onClick = [this] {stringToXml();};
-        addAndMakeVisible (loadButton);
-
-        setSize (200,200);
+        addChildComponent (loadButton);
+    }
+    
+    void makeLoginVisible ()
+    {
+        system("open https://bit.ly/adclogin");
+        auto area = getLocalBounds();
+        initialLoginButton.setVisible(false);
+        welcome.setText("Login in the browser and paste your authorization code here:", juce::dontSendNotification);
+        loginButton.setVisible(true);
+        authorizationCode.setVisible(true);
+        welcome.setBounds (area.removeFromTop(50));
+        authorizationCode.setBounds (area.removeFromTop(50));
+        loginButton.setBounds (area.removeFromTop(50));
+    }
+    
+    void hideLoginComponents ()
+    {
+        auto area = getLocalBounds();
+        initialLoginButton.setVisible(false);
+        loginButton.setVisible(false);
+        authorizationCode.setVisible(false);
+        welcome.setText("Welcome, this are your cloud available settings:", juce::dontSendNotification);
+        userName.setVisible(true);
+        settingsList.setVisible(true);
+        loadButton.setVisible(true);
+        userName.setBounds (area.removeFromTop(50));
+        welcome.setBounds (area.removeFromTop(50));
+        settingsList.setBounds (area.removeFromTop(50));
+        loadButton.setBounds (area.removeFromTop(50));
     }
     
     juce::var getAllSettings ()
     {
+        DBG("-----------GET ALL SETTINGS----------");
         adamski::RestRequest request;
+        DBG("--id token--" << tree.getProperty("idToken").toString());
+        request.header("Authorization", "Bearer " + tree.getProperty("idToken").toString());
         adamski::RestRequest::Response response = request
         .get ("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/settings")
         .execute();
@@ -217,20 +253,37 @@ public:
         if(tree.hasProperty("accessToken")){
             userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
         }
+        DBG("Tree Changes" << tree.getProperty("isUserActive").toString());
+        if(tree.hasProperty("isUserActive") && tree.getProperty("isUserActive")){
+            DBG("Tree isUserActive exists and is true");
+            
+            DBG("************LISTENER****************");
+            addCloudComponents();
+        }else{
+            DBG("Tree isUserActive exists and is false");
+            addLoginComponents();
+        }
     }
     
     void checkLogin ()
     {
-        DBG("Tree" << tree.getProperty("accessToken").toString());
+        DBG("Tree CHECK LOGIN");
+        tree.setProperty("isUserActive", false, nullptr);
         if(tree.hasProperty("accessToken")){
             
             String userInfo = userInfoRequest(tree["accessToken"]);
             if(userInfo == "Request Error"){
+                addLoginComponents();
                 userName.setText("Please Login", juce::dontSendNotification);
             }else{
                 userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
+                
+                DBG("************CHECK LOGIN****************");
+                addCloudComponents();
+                tree.setProperty("isUserActive", true, nullptr);
             }
         }else{
+            addLoginComponents();
             userName.setText("You are not logged in", juce::dontSendNotification);
         }
     }
@@ -238,13 +291,13 @@ public:
     void resized() override
     {
         auto area = getLocalBounds();
-        userName.setBounds (area.removeFromTop(50));
+        welcome.setBounds (area.removeFromTop(50));
+        initialLoginButton.setBounds (area.removeFromTop(50));
         authorizationCode.setBounds (area.removeFromTop(50));
         loginButton.setBounds (area.removeFromTop(50));
+        userName.setBounds (area.removeFromTop(50));
         settingsList.setBounds (area.removeFromTop(50));
         loadButton.setBounds (area.removeFromTop(50));
-        initialLoginButton.setBounds (area.removeFromTop(50));
-        welcome.setBounds (area.removeFromTop(50));
     }
 
     void paint (juce::Graphics& g) override
@@ -265,7 +318,12 @@ public:
         juce::String id_token = response.body.getProperty("id_token", "").toString();
         juce::String refresh_token = response.body.getProperty("refresh_token", "").toString();
         
-        if(tree.isValid()){
+        if(response.status != 200){
+            tree.setProperty("isUserActive", false, nullptr);
+            welcome.setText("There was an error with the login, please try again.", juce::dontSendNotification);
+        }else{
+            tree.setProperty("isUserActive", true, nullptr);
+            hideLoginComponents();
             tree.setProperty ("accessToken", access_token, nullptr);
             tree.setProperty ("idToken", id_token, nullptr);
             tree.setProperty ("refreshToken", refresh_token, nullptr);
@@ -323,7 +381,7 @@ public:
         showCloud.setButtonText("Serverless Settings");
         addAndMakeVisible (showCloud);
 
-        setSize (500, 400);
+        setSize (500, 600);
     }
 
     void resized() override
