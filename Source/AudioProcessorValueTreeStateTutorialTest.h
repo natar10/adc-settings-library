@@ -148,14 +148,14 @@ public:
     CloudComponent (juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr)
         : valueTreeState (vts), tree(tr)
     {
+        addAndMakeVisible (welcome);
         checkLogin();
-        setSize(200, 400);
+        setSize(500, 500);
     }
     
     void addLoginComponents ()
     {
         welcome.setText("Login here to sync your settings in the cloud", juce::dontSendNotification);
-        addAndMakeVisible (welcome);
         
         initialLoginButton.setButtonText("Log in");
         initialLoginButton.setSize(100, 50);
@@ -174,7 +174,12 @@ public:
     }
     
     void addCloudComponents (){
+        DBG("ENTRA A AD CLOUD COMP");
+        
         addChildComponent (settingsList);
+        addChildComponent (results);
+        addChildComponent (loadButton);
+        
         juce::var cloudSettings = getAllSettings();
         
         settingsList.clear();
@@ -190,7 +195,7 @@ public:
         loadButton.setButtonText("Load Configuration");
         loadButton.setSize(100, 50);
         loadButton.onClick = [this] {stringToXml();};
-        addChildComponent (loadButton);
+        DBG("finaliza A AD CLOUD COMP");
     }
     
     void makeLoginVisible ()
@@ -208,18 +213,22 @@ public:
     
     void hideLoginComponents ()
     {
+        DBG("ENTRA HIDE LOGIN COMP");
         auto area = getLocalBounds();
         initialLoginButton.setVisible(false);
         loginButton.setVisible(false);
         authorizationCode.setVisible(false);
-        welcome.setText("Welcome, this are your cloud available settings:", juce::dontSendNotification);
         userName.setVisible(true);
         settingsList.setVisible(true);
         loadButton.setVisible(true);
-        userName.setBounds (area.removeFromTop(50));
+        results.setVisible(true);
+        welcome.setText("Welcome, this are your cloud available settings:", juce::dontSendNotification);
         welcome.setBounds (area.removeFromTop(50));
+        userName.setBounds (area.removeFromTop(50));
         settingsList.setBounds (area.removeFromTop(50));
         loadButton.setBounds (area.removeFromTop(50));
+        results.setBounds (area.removeFromTop(50));
+        DBG("finaliza HIDE LOGIN COMP");
     }
     
     juce::var getAllSettings ()
@@ -242,15 +251,19 @@ public:
         adamski::RestRequest::Response response = request
         .get ("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/settings/object/" + std::to_string(selectedSetting))
         .execute();
+        if(response.status != 200){
+            results.setText("There was an error loading this setting", juce::dontSendNotification);
+        }else{
+            juce::String xmlResponse = response.body.getProperty("xml", "idx").toString();
+            valueTreeState.replaceState (juce::ValueTree::fromXml (xmlResponse));
+            results.setText("Setting loaded", juce::dontSendNotification);
+        }
         
-        juce::String xmlResponse = response.body.getProperty("xml", "idx").toString();
-        
-        valueTreeState.replaceState (juce::ValueTree::fromXml (xmlResponse));
-
     }
     
     void valueTreePropertyChanged (ValueTree& tree, const Identifier& property) override
     {
+        DBG("************LISTENER LISTENER LISTENER ***************");
         if(tree.hasProperty("accessToken")){
             userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
         }
@@ -258,10 +271,11 @@ public:
         if(tree.hasProperty("isUserActive") && tree.getProperty("isUserActive")){
             DBG("Tree isUserActive exists and is true");
             
-            DBG("************LISTENER****************");
+            DBG("************LISTENER LLAMA A CLOUD****************");
             addCloudComponents();
+            hideLoginComponents();
         }else{
-            DBG("Tree isUserActive exists and is false");
+            DBG("Tree isUserActive is false");
             addLoginComponents();
         }
     }
@@ -270,35 +284,41 @@ public:
     {
         DBG("Tree CHECK LOGIN");
         tree.setProperty("isUserActive", false, nullptr);
+        DBG("Tree ISUSER" << tree.getProperty("isUserActive").toString());
+
         if(tree.hasProperty("accessToken")){
             
             String userInfo = userInfoRequest(tree["accessToken"]);
+            DBG("************USER INFO****************" << userInfo);
             if(userInfo == "Request Error"){
                 addLoginComponents();
                 userName.setText("Please Login", juce::dontSendNotification);
             }else{
                 userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
-                
-                DBG("************CHECK LOGIN****************");
+                DBG("************LOGGED IN****************");
                 addCloudComponents();
+                hideLoginComponents();
                 tree.setProperty("isUserActive", true, nullptr);
             }
         }else{
             addLoginComponents();
             userName.setText("You are not logged in", juce::dontSendNotification);
         }
+        
+        DBG("Tree ISUSER--" << tree.getProperty("isUserActive").toString());
     }
     
     void resized() override
     {
         auto area = getLocalBounds();
         welcome.setBounds (area.removeFromTop(50));
-        initialLoginButton.setBounds (area.removeFromTop(50));
-        authorizationCode.setBounds (area.removeFromTop(50));
-        loginButton.setBounds (area.removeFromTop(50));
         userName.setBounds (area.removeFromTop(50));
         settingsList.setBounds (area.removeFromTop(50));
         loadButton.setBounds (area.removeFromTop(50));
+        results.setBounds (area.removeFromTop(50));
+        initialLoginButton.setBounds (area.removeFromTop(50));
+        authorizationCode.setBounds (area.removeFromTop(50));
+        loginButton.setBounds (area.removeFromTop(50));
     }
 
     void paint (juce::Graphics& g) override
@@ -308,6 +328,8 @@ public:
     
     void loginRequest ()
     {
+        loginButton.setButtonText("Loading...");
+        loginButton.setEnabled(false);
         juce::String authCode = authorizationCode.getTextValue().toString();
         adamski::RestRequest request;
         request.header("Content-Type", "application/x-www-form-urlencoded");
@@ -322,6 +344,8 @@ public:
         if(response.status != 200){
             tree.setProperty("isUserActive", false, nullptr);
             welcome.setText("There was an error with the login, please try again.", juce::dontSendNotification);
+            loginButton.setEnabled(true);
+            loginButton.setButtonText("Login");
         }else{
             tree.setProperty("isUserActive", true, nullptr);
             hideLoginComponents();
@@ -357,6 +381,7 @@ private:
     juce::Label userName;
     juce::TextButton initialLoginButton;
     juce::Label welcome;
+    juce::Label results;
 };
 
 class GenericEditor : public juce::AudioProcessorEditor
