@@ -49,99 +49,6 @@
 
 //==============================================================================
 
-class PluginComponent : public juce::Component
-{
-public:
-    enum
-    {
-        paramControlHeight = 40,
-        paramLabelWidth    = 80,
-        paramSliderWidth   = 300
-    };
-
-    typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
-    typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
-
-    PluginComponent (juce::AudioProcessorValueTreeState& vts)
-        : valueTreeState (vts)
-    {
-        gainLabel.setText ("Gain", juce::dontSendNotification);
-        addAndMakeVisible (gainLabel);
-
-        addAndMakeVisible (gainSlider);
-        gainAttachment.reset (new SliderAttachment (valueTreeState, "gain", gainSlider));
-        
-        saveButton.setButtonText("Save to Cloud");
-        saveButton.setSize(100, 50);
-        saveButton.onClick = [this] {makeHttpRequest();};
-        addAndMakeVisible (saveButton);
-        
-        settingName.setSize(100, 50);
-        addAndMakeVisible (settingName);
-        
-        invertButton.setButtonText ("Invert Phase");
-        addAndMakeVisible (invertButton);
-        invertAttachment.reset (new ButtonAttachment (valueTreeState, "invertPhase", invertButton));
-
-        setSize (400, 400);
-    }
-    
-    void makeHttpRequest ()
-    {
-        juce::Random random;
-        juce:String settingXml = valueTreeState.state.toXmlString();
-        adamski::RestRequest request;
-        request.header("Content-Type", "application/json");
-        request.field("id", String(random.nextInt()));
-        request.field("user", "nr");
-        request.field("project", settingName.getTextValue().toString());
-        request.field("group", "tests");
-        request.field("xml", settingXml);
-        request.field("settings", "foo");
-        request.field("public", true);
-        request.field("active", true);
-        adamski::RestRequest::Response response = request
-        .put ("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/settings")
-        .execute();
-    }
-
-    void resized() override
-    {
-        auto area = getLocalBounds();
-
-        auto gainRect = area.removeFromTop (paramControlHeight);
-        gainLabel .setBounds (gainRect.removeFromLeft (paramLabelWidth));
-        gainSlider.setBounds (gainRect);
-        saveButton.setBounds (area.removeFromBottom(50));
-        settingName.setBounds (area.removeFromBottom(50));
-
-        invertButton.setBounds (area.removeFromTop (paramControlHeight));
-    }
-
-    void paint (juce::Graphics& g) override
-    {
-        g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-    }
-
-private:
-    juce::AudioProcessorValueTreeState& valueTreeState;
-
-    juce::Label gainLabel;
-    juce::Slider gainSlider;
-    juce::TextButton saveButton;
-    juce::TextEditor settingName;
-    std::unique_ptr<SliderAttachment> gainAttachment;
-
-    juce::ToggleButton invertButton;
-    std::unique_ptr<ButtonAttachment> invertAttachment;
-};
-
-class XMLSetting {
-  public:
-    juce::String id;
-    juce::String project;
-};
-
 class CloudComponent : public juce::Component, public ValueTree::Listener
 {
 public:
@@ -158,17 +65,17 @@ public:
         welcome.setText("Login here to sync your settings in the cloud", juce::dontSendNotification);
         
         initialLoginButton.setButtonText("Log in");
-        initialLoginButton.setSize(100, 50);
+        initialLoginButton.setSize(100, 30);
         initialLoginButton.onClick = [this] {makeLoginVisible();};
         addAndMakeVisible (initialLoginButton);
         addAndMakeVisible (userName);
         tree.addListener(this);
 
-        authorizationCode.setSize(100, 50);
+        authorizationCode.setSize(100, 30);
         addChildComponent (authorizationCode);
         
         loginButton.setButtonText("Log in");
-        loginButton.setSize(100, 50);
+        loginButton.setSize(100, 30);
         loginButton.onClick = [this] {loginRequest();};
         addChildComponent (loginButton);
     }
@@ -179,7 +86,25 @@ public:
         addChildComponent (settingsList);
         addChildComponent (results);
         addChildComponent (loadButton);
+        addChildComponent (refreshButton);
+        addChildComponent (userName);
         
+        updateSettingsList();
+        
+        loadButton.setButtonText("Load Configuration");
+        loadButton.setSize(100, 30);
+        loadButton.onClick = [this] {stringToXml();};
+        
+        refreshButton.setButtonText("Refresh");
+        refreshButton.setSize(100, 30);
+        refreshButton.onClick = [this] {updateSettingsList();};
+        
+        DBG("finaliza A AD CLOUD COMP");
+    }
+    
+    void updateSettingsList (){
+        refreshButton.setButtonText("Loading...");
+        refreshButton.setEnabled(false);
         juce::var cloudSettings = getAllSettings();
         
         settingsList.clear();
@@ -189,45 +114,34 @@ public:
                 settingsList.addItem (cloudSettings[i].getProperty("project", "--").toString(), (int) cloudSettings[i].getProperty("id", 0));
             }
         
-        settingsList.setSize(200, 40);
+        settingsList.setSize(200, 30);
         settingsList.setSelectedId(1);
-        
-        loadButton.setButtonText("Load Configuration");
-        loadButton.setSize(100, 50);
-        loadButton.onClick = [this] {stringToXml();};
-        DBG("finaliza A AD CLOUD COMP");
+        refreshButton.setButtonText("Refresh");
+        refreshButton.setEnabled(true);
     }
     
     void makeLoginVisible ()
     {
         system("open https://bit.ly/adclogin");
-        auto area = getLocalBounds();
         initialLoginButton.setVisible(false);
         welcome.setText("Login in the browser and paste your authorization code here:", juce::dontSendNotification);
         loginButton.setVisible(true);
         authorizationCode.setVisible(true);
-        welcome.setBounds (area.removeFromTop(50));
-        authorizationCode.setBounds (area.removeFromTop(50));
-        loginButton.setBounds (area.removeFromTop(50));
     }
     
     void hideLoginComponents ()
     {
         DBG("ENTRA HIDE LOGIN COMP");
-        auto area = getLocalBounds();
         initialLoginButton.setVisible(false);
         loginButton.setVisible(false);
         authorizationCode.setVisible(false);
         userName.setVisible(true);
         settingsList.setVisible(true);
         loadButton.setVisible(true);
+        refreshButton.setVisible(true);
         results.setVisible(true);
         welcome.setText("Welcome, this are your cloud available settings:", juce::dontSendNotification);
-        welcome.setBounds (area.removeFromTop(50));
-        userName.setBounds (area.removeFromTop(50));
-        settingsList.setBounds (area.removeFromTop(50));
-        loadButton.setBounds (area.removeFromTop(50));
-        results.setBounds (area.removeFromTop(50));
+        
         DBG("finaliza HIDE LOGIN COMP");
     }
     
@@ -235,7 +149,6 @@ public:
     {
         DBG("-----------GET ALL SETTINGS----------");
         adamski::RestRequest request;
-        DBG("--id token--" << tree.getProperty("idToken").toString());
         request.header("Authorization", "Bearer " + tree.getProperty("idToken").toString());
         adamski::RestRequest::Response response = request
         .get ("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/settings")
@@ -274,9 +187,11 @@ public:
             DBG("************LISTENER LLAMA A CLOUD****************");
             addCloudComponents();
             hideLoginComponents();
+            placeComponentsForSettings();
         }else{
             DBG("Tree isUserActive is false");
             addLoginComponents();
+            placeComponentsForLogin();
         }
     }
     
@@ -310,15 +225,39 @@ public:
     
     void resized() override
     {
+        if(tree.getProperty("isUserActive")){
+            placeComponentsForSettings();
+        }else{
+            placeComponentsForLogin();
+        }
+    }
+    
+    void placeComponentsForLogin ()
+    {
         auto area = getLocalBounds();
         welcome.setBounds (area.removeFromTop(50));
-        userName.setBounds (area.removeFromTop(50));
-        settingsList.setBounds (area.removeFromTop(50));
-        loadButton.setBounds (area.removeFromTop(50));
-        results.setBounds (area.removeFromTop(50));
-        initialLoginButton.setBounds (area.removeFromTop(50));
-        authorizationCode.setBounds (area.removeFromTop(50));
-        loginButton.setBounds (area.removeFromTop(50));
+        initialLoginButton.setBounds (area.removeFromTop(30));
+        authorizationCode.setBounds (area.removeFromTop(30));
+        loginButton.setBounds (area.removeFromTop(30));
+        userName.setBounds (area.removeFromTop(30));
+        refreshButton.setBounds (area.removeFromTop(30));
+        settingsList.setBounds (area.removeFromTop(30));
+        loadButton.setBounds (area.removeFromTop(30));
+        results.setBounds (area.removeFromTop(30));
+    }
+    
+    void placeComponentsForSettings ()
+    {
+        auto area = getLocalBounds();
+        welcome.setBounds (area.removeFromTop(50));
+        userName.setBounds (area.removeFromTop(30));
+        refreshButton.setBounds (area.removeFromTop(30));
+        settingsList.setBounds (area.removeFromTop(30));
+        loadButton.setBounds (area.removeFromTop(30));
+        results.setBounds (area.removeFromTop(30));
+        initialLoginButton.setBounds (area.removeFromTop(30));
+        authorizationCode.setBounds (area.removeFromTop(30));
+        loginButton.setBounds (area.removeFromTop(30));
     }
 
     void paint (juce::Graphics& g) override
@@ -378,10 +317,165 @@ private:
     juce::TextButton loadButton;
     juce::TextEditor authorizationCode;
     juce::TextButton loginButton;
+    juce::TextButton refreshButton;
     juce::Label userName;
     juce::TextButton initialLoginButton;
     juce::Label welcome;
     juce::Label results;
+};
+
+class PluginComponent : public juce::Component, public ValueTree::Listener
+{
+public:
+    enum
+    {
+        paramControlHeight = 40,
+        paramLabelWidth    = 80,
+        paramSliderWidth   = 300
+    };
+
+    typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
+    typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
+
+    PluginComponent (juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr)
+        : valueTreeState (vts), tree (tr)
+    {
+        gainLabel.setText ("Gain", juce::dontSendNotification);
+        addAndMakeVisible (gainLabel);
+
+        addAndMakeVisible (gainSlider);
+        gainAttachment.reset (new SliderAttachment (valueTreeState, "gain", gainSlider));
+        
+        invertButton.setButtonText ("Invert Phase");
+        addAndMakeVisible (invertButton);
+        invertAttachment.reset (new ButtonAttachment (valueTreeState, "invertPhase", invertButton));
+        
+        toggleSave.setButtonText("Save to Cloud");
+        toggleSave.setSize(100, 30);
+        toggleSave.onClick = [this] {toggleSaveToCloud();};
+        addChildComponent (toggleSave);
+        
+        DBG("xxxxxxxxTree Changes" << tree.getProperty("isUserActive").toString());
+        if(tree.getProperty("isUserActive")){
+            toggleSave.setVisible(true);
+        }else{
+            toggleSave.setVisible(false);
+        }
+        
+        saveLabel.setText ("Add the name of your setting to save:", juce::dontSendNotification);
+        addChildComponent (saveLabel);
+        
+        saveButton.setButtonText("Save");
+        saveButton.setSize(100, 30);
+        saveButton.onClick = [this] {makeHttpRequest();};
+        addChildComponent (saveButton);
+        
+        privateButton.setButtonText ("This setting should be public");
+        addChildComponent (privateButton);
+        
+        settingName.setSize(100, 30);
+        settingName.setDescription("Add the name of your setting to save:");
+        addChildComponent (settingName);
+
+        setSize (400, 400);
+        
+        tree.addListener(this);
+    }
+    
+    void toggleSaveToCloud ()
+    {
+        privateButton.setVisible(!privateButton.isVisible());
+        saveLabel.setVisible(!saveLabel.isVisible());
+        saveButton.setVisible(!saveButton.isVisible());
+        settingName.setVisible(!settingName.isVisible());
+        if(saveButton.isVisible()){
+            toggleSave.setButtonText("Hide Save to Cloud");
+        }else{
+            toggleSave.setButtonText("Save to Cloud");
+        }
+    }
+    
+    void makeHttpRequest ()
+    {
+        juce::Random random;
+        juce:String settingXml = valueTreeState.state.toXmlString();
+        adamski::RestRequest request;
+        request.header("Authorization", "Bearer " + tree.getProperty("idToken").toString());
+        request.header("Content-Type", "application/json");
+        request.field("id", String(random.nextInt()));
+        request.field("project", settingName.getTextValue().toString());
+        request.field("group", "tests");
+        request.field("xml", settingXml);
+        request.field("settings", "[]");
+        request.field("public", privateButton.getToggleStateValue());
+        request.field("active", true);
+        adamski::RestRequest::Response response = request
+        .put ("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/settings")
+        .execute();
+        refreshAndResetForm();
+    }
+    
+    void refreshAndResetForm ()
+    {
+        settingName.setText("");
+        invertButton.setState(juce::ToggleButton::buttonDown);
+        toggleSaveToCloud();
+        cloud->updateSettingsList();
+    }
+    
+    void valueTreePropertyChanged (ValueTree& tree, const Identifier& property) override
+    {
+        if(tree.hasProperty("isUserActive") && tree.getProperty("isUserActive")){
+            toggleSave.setVisible(true);
+        }else{
+            toggleSave.setVisible(false);
+        }
+    }
+
+    void resized() override
+    {
+        auto area = getLocalBounds();
+
+        auto gainRect = area.removeFromTop (paramControlHeight);
+        gainLabel .setBounds (gainRect.removeFromLeft (paramLabelWidth));
+        gainSlider.setBounds (gainRect);
+        invertButton.setBounds (area.removeFromTop (paramControlHeight));
+        
+        toggleSave.setBounds (area.removeFromBottom(30));
+        saveButton.setBounds (area.removeFromBottom(30));
+        settingName.setBounds (area.removeFromBottom(30));
+        privateButton.setBounds (area.removeFromBottom(30));
+        saveLabel.setBounds (area.removeFromBottom(30));
+    }
+
+    void paint (juce::Graphics& g) override
+    {
+        g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    }
+
+private:
+    juce::AudioProcessorValueTreeState& valueTreeState;
+    juce::ValueTree& tree;
+    
+    juce::Label gainLabel;
+    juce::Label saveLabel;
+    juce::Slider gainSlider;
+    juce::TextButton toggleSave;
+    juce::TextButton saveButton;
+    juce::TextEditor settingName;
+    std::unique_ptr<SliderAttachment> gainAttachment;
+
+    juce::ToggleButton invertButton;
+    std::unique_ptr<ButtonAttachment> invertAttachment;
+    
+    juce::ToggleButton privateButton;
+    CloudComponent* cloud = new CloudComponent(valueTreeState, tree);
+};
+
+class XMLSetting {
+  public:
+    juce::String id;
+    juce::String project;
 };
 
 class GenericEditor : public juce::AudioProcessorEditor
@@ -404,7 +498,7 @@ public:
         addAndMakeVisible(cloud);
         addAndMakeVisible (plugin);
         
-        showCloud.setButtonText("Serverless Settings");
+        showCloud.setButtonText("Serverless Cloud Library");
         addAndMakeVisible (showCloud);
 
         setSize (500, 600);
@@ -430,7 +524,7 @@ private:
     juce::ValueTree& tree;
     juce::TextButton showCloud;
     CloudComponent* cloud = new CloudComponent(valueTreeState, tree);
-    PluginComponent* plugin = new PluginComponent(valueTreeState);
+    PluginComponent* plugin = new PluginComponent(valueTreeState, tree);
     
 };
 
