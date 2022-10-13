@@ -58,6 +58,7 @@ public:
         addAndMakeVisible (welcome);
         checkLogin();
         setSize(500, 500);
+        tree.addListener(this);
     }
     
     void addLoginComponents ()
@@ -69,7 +70,6 @@ public:
         initialLoginButton.onClick = [this] {makeLoginVisible();};
         addAndMakeVisible (initialLoginButton);
         addAndMakeVisible (userName);
-        tree.addListener(this);
 
         authorizationCode.setSize(100, 30);
         addChildComponent (authorizationCode);
@@ -78,6 +78,35 @@ public:
         loginButton.setSize(100, 30);
         loginButton.onClick = [this] {loginRequest();};
         addChildComponent (loginButton);
+    }
+    
+    void valueTreePropertyChanged (ValueTree &tree, const Identifier &property) override
+    {
+        
+        DBG("************LISTENER LISTENER LISTENER ***************");
+        DBG("**PROPERTY**: " << property);
+        DBG("**VALUE**: " << tree.toXmlString());
+        juce::Identifier active = "isUserActive";
+        if(property == active){
+            if(tree.hasProperty("accessToken")){
+                updateUserName();
+            }
+            DBG("Tree Changes" << tree.getProperty("isUserActive").toString());
+            if(tree.hasProperty("isUserActive") && tree.getProperty("isUserActive")){
+                DBG("Tree isUserActive exists and is true");
+                
+                DBG("************LISTENER LLAMA A CLOUD****************");
+                addCloudComponents();
+                hideLoginComponents();
+                placeComponentsForSettings();
+                //plugin->toogleSaveButton(true);
+            }else{
+                DBG("Tree isUserActive is false");
+                addLoginComponents();
+                placeComponentsForLogin();
+                //plugin->toogleSaveButton(false);
+            }
+        }
     }
     
     void addCloudComponents (){
@@ -100,6 +129,10 @@ public:
         refreshButton.onClick = [this] {updateSettingsList();};
         
         DBG("finaliza A AD CLOUD COMP");
+    }
+    
+    void updateUserName(){
+        userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
     }
     
     void updateSettingsList (){
@@ -174,31 +207,10 @@ public:
         
     }
     
-    void valueTreePropertyChanged (ValueTree& tree, const Identifier& property) override
-    {
-        DBG("************LISTENER LISTENER LISTENER ***************");
-        if(tree.hasProperty("accessToken")){
-            userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
-        }
-        DBG("Tree Changes" << tree.getProperty("isUserActive").toString());
-        if(tree.hasProperty("isUserActive") && tree.getProperty("isUserActive")){
-            DBG("Tree isUserActive exists and is true");
-            
-            DBG("************LISTENER LLAMA A CLOUD****************");
-            addCloudComponents();
-            hideLoginComponents();
-            placeComponentsForSettings();
-        }else{
-            DBG("Tree isUserActive is false");
-            addLoginComponents();
-            placeComponentsForLogin();
-        }
-    }
-    
     void checkLogin ()
     {
         DBG("Tree CHECK LOGIN");
-        tree.setProperty("isUserActive", false, nullptr);
+        tree.setPropertyExcludingListener(this, "isUserActive", false, nullptr);
         DBG("Tree ISUSER" << tree.getProperty("isUserActive").toString());
 
         if(tree.hasProperty("accessToken")){
@@ -271,10 +283,10 @@ public:
         loginButton.setEnabled(false);
         juce::String authCode = authorizationCode.getTextValue().toString();
         adamski::RestRequest request;
-        request.header("Content-Type", "application/x-www-form-urlencoded");
-        request.header("Authorization", "Basic M2hobDc5bDlrOGMyNTgxNGVwYjhocHVyZm06bTRvZDhnMGlxaGRpZTZwNWpuN29oMHVyNHB2ZG90bDdrYm9sNHJlZDVtdjlxMG9zdjQy");
+        request.header("Content-Type", "application/json");
+        request.field("code", authCode);
         adamski::RestRequest::Response response = request
-        .post ("https://adc.auth.us-west-2.amazoncognito.com/oauth2/token?grant_type=authorization_code&client_id=3hhl79l9k8c25814epb8hpurfm&code=" + authCode + "&redirect_uri=http://localhost:3000/profile/code-generator/")
+        .post ("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/auth")
         .execute();
         juce::String access_token = response.body.getProperty("access_token", "").toString();
         juce::String id_token = response.body.getProperty("id_token", "").toString();
@@ -286,11 +298,11 @@ public:
             loginButton.setEnabled(true);
             loginButton.setButtonText("Login");
         }else{
-            tree.setProperty("isUserActive", true, nullptr);
             hideLoginComponents();
-            tree.setProperty ("accessToken", access_token, nullptr);
-            tree.setProperty ("idToken", id_token, nullptr);
-            tree.setProperty ("refreshToken", refresh_token, nullptr);
+            tree.setPropertyExcludingListener (this, "accessToken", access_token, nullptr);
+            tree.setPropertyExcludingListener (this, "idToken", id_token, nullptr);
+            tree.setPropertyExcludingListener(this, "refreshToken", refresh_token, nullptr);
+            tree.setProperty ("isUserActive", true, nullptr);
         }
     }
     
@@ -376,10 +388,11 @@ public:
         settingName.setSize(100, 30);
         settingName.setDescription("Add the name of your setting to save:");
         addChildComponent (settingName);
+        
+        tree.addListener(this);
 
         setSize (400, 400);
         
-        tree.addListener(this);
     }
     
     void toggleSaveToCloud ()
@@ -420,15 +433,22 @@ public:
         settingName.setText("");
         invertButton.setState(juce::ToggleButton::buttonDown);
         toggleSaveToCloud();
-        cloud->updateSettingsList();
     }
     
-    void valueTreePropertyChanged (ValueTree& tree, const Identifier& property) override
+    void toogleSaveButton (bool isEnabled)
     {
-        if(tree.hasProperty("isUserActive") && tree.getProperty("isUserActive")){
-            toggleSave.setVisible(true);
-        }else{
-            toggleSave.setVisible(false);
+        toggleSave.setVisible(isEnabled);
+    }
+    
+    void valueTreePropertyChanged (ValueTree &tree, const Identifier &property) override
+    {
+        juce::Identifier active = "isUserActive";
+        if(property == active){
+            if(tree.hasProperty("isUserActive") && tree.getProperty("isUserActive")){
+                toogleSaveButton(true);
+            }else{
+                toogleSaveButton(false);
+            }
         }
     }
 
@@ -469,7 +489,6 @@ private:
     std::unique_ptr<ButtonAttachment> invertAttachment;
     
     juce::ToggleButton privateButton;
-    CloudComponent* cloud = new CloudComponent(valueTreeState, tree);
 };
 
 class XMLSetting {
