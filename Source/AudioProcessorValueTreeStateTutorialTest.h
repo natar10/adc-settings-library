@@ -51,9 +51,8 @@
 #include "PluginComponent.h"
 #include "CloudComponent.h"
 
-class XMLSetting
+struct XMLSetting
 {
-  public:
     juce::String id;
     juce::String project;
 };
