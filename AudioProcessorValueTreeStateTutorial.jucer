@@ -4,13 +4,17 @@
               version="1.0.0" userNotes="Explores the audio processor value tree state."
               companyWebsite="http://juce.com" projectType="audioplug" pluginAUIsSandboxSafe="1"
               pluginManufacturer="JUCE" pluginFormats="buildVST3,buildAU,buildStandalone"
-              useAppConfig="0" addUsingNamespaceToJuceHeader="1" id="m1KZsR"
+              useAppConfig="1" addUsingNamespaceToJuceHeader="1" id="m1KZsR"
               jucerFormatVersion="1">
   <MAINGROUP id="PzvuhI" name="AudioProcessorValueTreeStateTutorial">
     <GROUP id="{B4D294DB-BC5C-6D59-BAE7-CF0BA2F95FA7}" name="Source">
+      <FILE id="ZekULf" name="AudioProcessorValueTreeStateTutorialTest.h"
+            compile="0" resource="0" file="Source/AudioProcessorValueTreeStateTutorialTest.h"/>
+      <FILE id="k8Tsob" name="CloudComponent.h" compile="0" resource="0"
+            file="Source/CloudComponent.h"/>
       <FILE id="uBQ2Bu" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
-      <FILE id="ET4Iws" name="AudioProcessorValueTreeStateTutorial.h" compile="0"
-            resource="0" file="Source/AudioProcessorValueTreeStateTutorial.h"/>
+      <FILE id="sb0rzq" name="PluginComponent.h" compile="0" resource="0"
+            file="Source/PluginComponent.h"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
@@ -27,7 +31,7 @@
     <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
-    <MODULE id="rest_request" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="rest_request" showAllCode="1" useLocalCopy="1" useGlobalPath="0"/>
   </MODULES>
   <EXPORTFORMATS>
     <XCODE_MAC targetFolder="Builds/MacOSX">
@@ -48,7 +52,7 @@
         <MODULEPATH id="juce_graphics" path=""/>
         <MODULEPATH id="juce_gui_basics" path=""/>
         <MODULEPATH id="juce_gui_extra" path=""/>
-        <MODULEPATH id="rest_request" path="../../audio-dev"/>
+        <MODULEPATH id="rest_request" path="ExternalDeps"/>
       </MODULEPATHS>
     </XCODE_MAC>
     <VS2019 targetFolder="Builds/VisualStudio2019">
@@ -69,7 +73,7 @@
         <MODULEPATH id="juce_graphics" path=""/>
         <MODULEPATH id="juce_gui_basics" path=""/>
         <MODULEPATH id="juce_gui_extra" path=""/>
-        <MODULEPATH id="rest_request" path="../../audio-dev"/>
+        <MODULEPATH id="rest_request" path="ExternalDeps"/>
       </MODULEPATHS>
     </VS2019>
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile">
@@ -90,7 +94,7 @@
         <MODULEPATH id="juce_graphics" path=""/>
         <MODULEPATH id="juce_gui_basics" path=""/>
         <MODULEPATH id="juce_gui_extra" path=""/>
-        <MODULEPATH id="rest_request" path="../../audio-dev"/>
+        <MODULEPATH id="rest_request" path="ExternalDeps"/>
       </MODULEPATHS>
     </LINUX_MAKE>
   </EXPORTFORMATS>
