@@ -8,6 +8,8 @@
               jucerFormatVersion="1" bundleIdentifier="com.natar10.AudioProcessorValueTreeStateTutorial">
   <MAINGROUP id="PzvuhI" name="AudioProcessorValueTreeStateTutorial">
     <GROUP id="{B4D294DB-BC5C-6D59-BAE7-CF0BA2F95FA7}" name="Source">
+      <FILE id="j6NvJH" name="PluginComponent.cpp" compile="1" resource="0"
+            file="Source/PluginComponent.cpp"/>
       <FILE id="VD5qaS" name="CloudComponent.cpp" compile="1" resource="0"
             file="Source/CloudComponent.cpp"/>
       <FILE id="ZekULf" name="AudioProcessorValueTreeStateTutorialTest.h"
