@@ -44,7 +44,6 @@
 
 *******************************************************************************/
 
-
 #pragma once
 
 //==============================================================================
@@ -52,7 +51,8 @@
 #include "PluginComponent.h"
 #include "CloudComponent.h"
 
-class XMLSetting {
+class XMLSetting
+{
   public:
     juce::String id;
     juce::String project;
@@ -60,46 +60,45 @@ class XMLSetting {
 
 class GenericEditor : public juce::AudioProcessorEditor
 {
-public:
+  public:
     enum
     {
         paramControlHeight = 40,
-        paramLabelWidth    = 80,
-        paramSliderWidth   = 300
+        paramLabelWidth = 80,
+        paramSliderWidth = 300
     };
 
     typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
     typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 
-    GenericEditor (juce::AudioProcessor& parent, juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr)
-        : AudioProcessorEditor (parent),
-          valueTreeState (vts), tree (tr)
+    GenericEditor(juce::AudioProcessor& parent, juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr) :
+        AudioProcessorEditor(parent), valueTreeState(vts), tree(tr)
     {
         addAndMakeVisible(cloud);
-        addAndMakeVisible (plugin);
-        
-        showCloud.setButtonText("Serverless Cloud Library");
-        addAndMakeVisible (showCloud);
+        addAndMakeVisible(plugin);
 
-        setSize (500, 600);
+        showCloud.setButtonText("Serverless Cloud Library");
+        addAndMakeVisible(showCloud);
+
+        setSize(500, 600);
     }
 
     void resized() override
     {
         auto area = getLocalBounds();
-        auto headerHeight = area.removeFromTop (36);
-        auto fromTop = area.removeFromTop (200);
-        showCloud.setBounds (headerHeight);
-        cloud->setBounds (fromTop.removeFromLeft (200));
-        plugin->setBounds (fromTop);
+        auto headerHeight = area.removeFromTop(36);
+        auto fromTop = area.removeFromTop(200);
+        showCloud.setBounds(headerHeight);
+        cloud->setBounds(fromTop.removeFromLeft(200));
+        plugin->setBounds(fromTop);
     }
 
-    void paint (juce::Graphics& g) override
+    void paint(juce::Graphics& g) override
     {
-        g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+        g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
     }
 
-private:
+  private:
     juce::AudioProcessorValueTreeState& valueTreeState;
     juce::ValueTree& tree;
     juce::TextButton showCloud;
@@ -107,125 +106,153 @@ private:
     PluginComponent* plugin = new PluginComponent(valueTreeState, tree);
 };
 
-
-
 //==============================================================================
-class TutorialProcessor  : public juce::AudioProcessor
+class TutorialProcessor : public juce::AudioProcessor
 {
-public:
+  public:
     //==============================================================================
-    TutorialProcessor()
-        : parameters (*this, nullptr, juce::Identifier ("APVTSTutorial"),
-                      {
-                          std::make_unique<juce::AudioParameterFloat> ("gain",            // parameterID
-                                                                       "Gain",            // parameter name
-                                                                       0.0f,              // minimum value
-                                                                       1.0f,              // maximum value
-                                                                       0.5f),             // default value
-                          std::make_unique<juce::AudioParameterBool> ("invertPhase",      // parameterID
-                                                                      "Invert Phase",     // parameter name
-                                                                      false)              // default value
-                      })
+    TutorialProcessor() :
+        parameters(*this,
+                   nullptr,
+                   juce::Identifier("APVTSTutorial"),
+                   {
+                       std::make_unique<juce::AudioParameterFloat>("gain",        // parameterID
+                                                                   "Gain",        // parameter name
+                                                                   0.0f,          // minimum value
+                                                                   1.0f,          // maximum value
+                                                                   0.5f),         // default value
+                       std::make_unique<juce::AudioParameterBool>("invertPhase",  // parameterID
+                                                                  "Invert Phase", // parameter name
+                                                                  false)          // default value
+                   })
     {
-        phaseParameter = parameters.getRawParameterValue ("invertPhase");
-        gainParameter  = parameters.getRawParameterValue ("gain");
+        phaseParameter = parameters.getRawParameterValue("invertPhase");
+        gainParameter = parameters.getRawParameterValue("gain");
     }
 
     //==============================================================================
-    void prepareToPlay (double, int) override
+    void prepareToPlay(double, int) override
     {
         auto phase = *phaseParameter < 0.5f ? 1.0f : -1.0f;
         previousGain = *gainParameter * phase;
     }
-    
-    void releaseResources() override {}
 
-    void processBlock (juce::AudioSampleBuffer& buffer, juce::MidiBuffer&) override
+    void releaseResources() override
+    {
+    }
+
+    void processBlock(juce::AudioSampleBuffer& buffer, juce::MidiBuffer&) override
     {
         auto phase = *phaseParameter < 0.5f ? 1.0f : -1.0f;
         auto currentGain = *gainParameter * phase;
 
-        if (currentGain == previousGain)
-        {
-            buffer.applyGain (currentGain);
-        }
-        else
-        {
-            buffer.applyGainRamp (0, buffer.getNumSamples(), previousGain, currentGain);
+        if (currentGain == previousGain) {
+            buffer.applyGain(currentGain);
+        } else {
+            buffer.applyGainRamp(0, buffer.getNumSamples(), previousGain, currentGain);
             previousGain = currentGain;
         }
     }
-    
+
     void exportValueTreeToXML()
     {
-        File newPreset (desktopDir.getFullPathName() + "/saveData.xml");
-        
+        File newPreset(desktopDir.getFullPathName() + "/saveData.xml");
+
         if (!newPreset.exists())
             newPreset.create();
 
-        std::unique_ptr<juce::XmlElement> vtXML (tree.createXml());
-        if(!(vtXML -> writeTo(newPreset)))
+        std::unique_ptr<juce::XmlElement> vtXML(tree.createXml());
+        if (!(vtXML->writeTo(newPreset)))
             DBG("FAIL");
-        
     }
 
     void loadXMLfromFile()
     {
-        File readFrom(desktopDir.getChildFile ("saveData.xml"));
-        if(readFrom.existsAsFile())
-        {
-            XmlDocument xmlDoc (readFrom);
+        File readFrom(desktopDir.getChildFile("saveData.xml"));
+        if (readFrom.existsAsFile()) {
+            XmlDocument xmlDoc(readFrom);
             if (auto mainElement = xmlDoc.getDocumentElement())
                 tree = tree.fromXml(*mainElement);
         }
     }
 
     //==============================================================================
-    juce::AudioProcessorEditor* createEditor() override          { return new GenericEditor (*this, parameters, tree); }
-    bool hasEditor() const override                              { return true; }
+    juce::AudioProcessorEditor* createEditor() override
+    {
+        return new GenericEditor(*this, parameters, tree);
+    }
+    bool hasEditor() const override
+    {
+        return true;
+    }
 
     //==============================================================================
-    const juce::String getName() const override                  { return "APVTS Tutorial"; }
-    bool acceptsMidi() const override                            { return false; }
-    bool producesMidi() const override                           { return false; }
-    double getTailLengthSeconds() const override                 { return 0; }
+    const juce::String getName() const override
+    {
+        return "APVTS Tutorial";
+    }
+    bool acceptsMidi() const override
+    {
+        return false;
+    }
+    bool producesMidi() const override
+    {
+        return false;
+    }
+    double getTailLengthSeconds() const override
+    {
+        return 0;
+    }
 
     //==============================================================================
-    int getNumPrograms() override                                { return 1; }
-    int getCurrentProgram() override                             { return 0; }
-    void setCurrentProgram (int) override                        {}
-    const juce::String getProgramName (int) override             { return {}; }
-    void changeProgramName (int, const juce::String&) override   {}
+    int getNumPrograms() override
+    {
+        return 1;
+    }
+    int getCurrentProgram() override
+    {
+        return 0;
+    }
+    void setCurrentProgram(int) override
+    {
+    }
+    const juce::String getProgramName(int) override
+    {
+        return {};
+    }
+    void changeProgramName(int, const juce::String&) override
+    {
+    }
 
     //==============================================================================
-    void getStateInformation (juce::MemoryBlock& destData) override
+    void getStateInformation(juce::MemoryBlock& destData) override
     {
         auto state = parameters.copyState();
-        std::unique_ptr<juce::XmlElement> xml (state.createXml());
-        copyXmlToBinary (*xml, destData);
-        if(tree.hasProperty("accessToken"))
+        std::unique_ptr<juce::XmlElement> xml(state.createXml());
+        copyXmlToBinary(*xml, destData);
+        if (tree.hasProperty("accessToken"))
             exportValueTreeToXML();
     }
 
-    void setStateInformation (const void* data, int sizeInBytes) override
+    void setStateInformation(const void* data, int sizeInBytes) override
     {
-        std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
+        std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
         if (xmlState.get() != nullptr)
-            if (xmlState->hasTagName (parameters.state.getType()))
-                parameters.replaceState (juce::ValueTree::fromXml (*xmlState));
-                loadXMLfromFile();
+            if (xmlState->hasTagName(parameters.state.getType()))
+                parameters.replaceState(juce::ValueTree::fromXml(*xmlState));
+        loadXMLfromFile();
     }
 
-private:
+  private:
     //==============================================================================
     juce::AudioProcessorValueTreeState parameters;
     juce::ValueTree tree{"main"};
     float previousGain; // [1]
 
     std::atomic<float>* phaseParameter = nullptr;
-    std::atomic<float>* gainParameter  = nullptr;
+    std::atomic<float>* gainParameter = nullptr;
     juce::File desktopDir = File::getSpecialLocation(File::userDesktopDirectory);
 
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TutorialProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TutorialProcessor)
 };
