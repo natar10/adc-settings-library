@@ -9,6 +9,10 @@ CloudComponent::CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::Va
     tree.addListener(this);
 }
 
+CloudComponent::~CloudComponent(){
+    tree.removeListener(this);
+}
+
 void CloudComponent::addLoginComponents()
 {
     welcome.setText("Login here to sync your settings in the cloud", juce::dontSendNotification);
@@ -172,26 +176,19 @@ void CloudComponent::stringToXml()
 void CloudComponent::checkLogin()
 {
     DBG("Tree CHECK LOGIN");
-    tree.setPropertyExcludingListener(this, "isUserActive", false, nullptr);
-    DBG("Tree ISUSER" << tree.getProperty("isUserActive").toString());
+    bool isUserActive = tree.getProperty("isUserActive");
+    DBG("*****isUserActive****" << tree.getProperty("isUserActive").toString());
 
-    if (tree.hasProperty("accessToken")) {
-
-        String userInfo = userInfoRequest(tree["accessToken"]);
-        DBG("************USER INFO****************" << userInfo);
-        if (userInfo == "Request Error") {
-            addLoginComponents();
-            userName.setText("Please Login", juce::dontSendNotification);
-        } else {
-            userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
-            DBG("************LOGGED IN****************");
-            addCloudComponents();
-            hideLoginComponents();
-            tree.setProperty("isUserActive", true, nullptr);
-        }
-    } else {
+    if (!isUserActive) {
         addLoginComponents();
-        userName.setText("You are not logged in", juce::dontSendNotification);
+        userName.setText("Please Login", juce::dontSendNotification);
+        tree.setProperty("isUserActive", false, nullptr);
+    } else {
+        userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
+        DBG("************LOGGED IN****************");
+        addCloudComponents();
+        hideLoginComponents();
+        tree.setProperty("isUserActive", true, nullptr);
     }
 
     DBG("Tree ISUSER--" << tree.getProperty("isUserActive").toString());

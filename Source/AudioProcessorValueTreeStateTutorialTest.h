@@ -83,7 +83,7 @@ class GenericEditor : public juce::AudioProcessorEditor
 class TutorialProcessor : public juce::AudioProcessor
 {
   public:
-    TutorialProcessor();
+    TutorialProcessor(bool isUserLoggedIn);
 
     virtual void prepareToPlay(double, int) override;
     void releaseResources() override;
@@ -110,6 +110,7 @@ class TutorialProcessor : public juce::AudioProcessor
     juce::AudioProcessorValueTreeState parameters;
     juce::ValueTree tree{"main"};
     float previousGain; // [1]
+    bool isUserActive;
 
     std::atomic<float>* phaseParameter = nullptr;
     std::atomic<float>* gainParameter = nullptr;

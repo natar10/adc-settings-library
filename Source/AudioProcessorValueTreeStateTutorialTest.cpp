@@ -38,7 +38,7 @@ void GenericEditor::paint(juce::Graphics& g)
     g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
 }
 
-TutorialProcessor::TutorialProcessor() :
+TutorialProcessor::TutorialProcessor(bool isUserLoggedIn) :
     parameters(*this,
                nullptr,
                juce::Identifier("APVTSTutorial"),
@@ -55,6 +55,7 @@ TutorialProcessor::TutorialProcessor() :
 {
     phaseParameter = parameters.getRawParameterValue("invertPhase");
     gainParameter = parameters.getRawParameterValue("gain");
+    isUserActive = isUserLoggedIn;
 }
 
 void TutorialProcessor::prepareToPlay(double, int)
@@ -171,4 +172,5 @@ void TutorialProcessor::setStateInformation(const void* data, int sizeInBytes)
         if (xmlState->hasTagName(parameters.state.getType()))
             parameters.replaceState(juce::ValueTree::fromXml(*xmlState));
     loadXMLfromFile();
+    tree.setProperty("isUserActive", isUserActive, nullptr);
 }
