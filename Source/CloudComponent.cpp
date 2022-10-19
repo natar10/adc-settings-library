@@ -184,7 +184,7 @@ void CloudComponent::checkLogin()
         userName.setText("Please Login", juce::dontSendNotification);
         tree.setProperty("isUserActive", false, nullptr);
     } else {
-        userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
+        userName.setText(tree.getProperty("userName"), juce::dontSendNotification);
         DBG("************LOGGED IN****************");
         addCloudComponents();
         hideLoginComponents();

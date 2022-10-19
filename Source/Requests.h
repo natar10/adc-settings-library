@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "Types.h"
 
 //==============================================================================
 
@@ -17,7 +18,7 @@ class Requests : public juce::Component
   public:
     Requests();
     
-    bool isUserLoggedIn();
+    LoginState isUserLoggedIn();
     juce::String userInfoRequest(juce::String access_token);
     void loadXMLfromFile();
 

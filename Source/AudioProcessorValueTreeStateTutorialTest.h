@@ -50,15 +50,10 @@
 
 #include "PluginComponent.h"
 #include "CloudComponent.h"
+#include "Types.h"
 
 #include <JuceHeader.h>
 #include <memory>
-
-struct XMLSetting
-{
-    juce::String id;
-    juce::String project;
-};
 
 class GenericEditor : public juce::AudioProcessorEditor
 {
@@ -83,7 +78,7 @@ class GenericEditor : public juce::AudioProcessorEditor
 class TutorialProcessor : public juce::AudioProcessor
 {
   public:
-    TutorialProcessor(bool isUserLoggedIn);
+    TutorialProcessor(LoginState loginState);
 
     virtual void prepareToPlay(double, int) override;
     void releaseResources() override;
@@ -110,7 +105,7 @@ class TutorialProcessor : public juce::AudioProcessor
     juce::AudioProcessorValueTreeState parameters;
     juce::ValueTree tree{"main"};
     float previousGain; // [1]
-    bool isUserActive;
+    LoginState userState;
 
     std::atomic<float>* phaseParameter = nullptr;
     std::atomic<float>* gainParameter = nullptr;

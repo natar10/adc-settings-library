@@ -4,17 +4,17 @@ Requests::Requests()
 {
 }
 
-bool Requests::isUserLoggedIn()
+LoginState Requests::isUserLoggedIn()
 {
     if (requestTree.hasProperty("accessToken")) {
         String userInfo = userInfoRequest(requestTree["accessToken"]);
         if (userInfo == "Request Error") {
-            return false;
+            return {false, ""};
         } else {
-            return true;
+            return {true, userInfo};
         }
     } else {
-        return false;
+        return {false, ""};
     }
 }
 

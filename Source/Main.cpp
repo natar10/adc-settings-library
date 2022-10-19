@@ -9,6 +9,7 @@
 #include <JuceHeader.h>
 #include "AudioProcessorValueTreeStateTutorialTest.h"
 #include "Requests.h"
+#include "Types.h"
 int a = 0;
 //Create the class here
 
@@ -16,12 +17,12 @@ int a = 0;
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     DBG("main method called");
-    bool isUserLoggedIn = false;
+    LoginState loginState = {};
     if(a == 0){
         DBG("verify only run once");
         a = 1;
         auto Req = new Requests();
-        isUserLoggedIn = Req->isUserLoggedIn();
+        loginState = Req->isUserLoggedIn();
     }
-    return new TutorialProcessor(isUserLoggedIn); //Here pass the reference for this class
+    return new TutorialProcessor(loginState); //Here pass the reference for this class
 }
