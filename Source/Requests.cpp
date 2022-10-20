@@ -4,25 +4,37 @@ Requests::Requests()
 {
 }
 
-LoginState Requests::isUserLoggedIn()
+LoginState Requests::isUserLoggedIn(const AccessToken& accessToken)
 {
-    if (requestTree.hasProperty("accessToken")) {
-        String userInfo = userInfoRequest(requestTree["accessToken"]);
-        if (userInfo == "Request Error") {
-            return {false, ""};
-        } else {
-            return {true, userInfo};
-        }
-    } else {
-        return {false, ""};
+    auto accessTokenString = accessToken.toString();
+
+    if (accessTokenString.isEmpty()) {
+        return {};
     }
+
+    if (loginCache.find(accessTokenString) != loginCache.end()) {
+        return loginCache[accessTokenString];
+    }
+
+    auto userInfo = userInfoRequest(accessToken);
+
+    if (userInfo == "Request Error") {
+        LoginState state{};
+        loginCache[accessTokenString] = state;
+        return {false, ""};
+    } else {
+        LoginState state{true, userInfo};
+        loginCache[accessTokenString] = state;
+    }
+
+    return loginCache[accessTokenString];
 }
 
-juce::String Requests::userInfoRequest(juce::String access_token)
+juce::String Requests::userInfoRequest(const AccessToken& accessToken)
 {
     adamski::RestRequest request;
     request.header("Content-Type", "application/x-www-form-urlencoded");
-    request.header("Authorization", "Bearer " + access_token);
+    request.header("Authorization", "Bearer " + accessToken.toString());
     adamski::RestRequest::Response response =
         request.get("https://adc.auth.us-west-2.amazoncognito.com/oauth2/userInfo").execute();
 
@@ -35,10 +47,10 @@ juce::String Requests::userInfoRequest(juce::String access_token)
 
 void Requests::loadXMLfromFile()
 {
-    File readFrom(desktopDir.getChildFile("saveData.xml"));
-    if (readFrom.existsAsFile()) {
-        XmlDocument xmlDoc(readFrom);
-        if (auto mainElement = xmlDoc.getDocumentElement())
-            requestTree = requestTree.fromXml(*mainElement);
-    }
+    // File readFrom(desktopDir.getChildFile("saveData.xml"));
+    // if (readFrom.existsAsFile()) {
+    // XmlDocument xmlDoc(readFrom);
+    // if (auto mainElement = xmlDoc.getDocumentElement())
+    // requestTree = requestTree.fromXml(*mainElement);
+    // }
 }

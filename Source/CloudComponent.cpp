@@ -1,7 +1,7 @@
 #include "CloudComponent.h"
 
-CloudComponent::CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr) :
-    valueTreeState(vts), tree(tr)
+CloudComponent::CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr, Requests& requests) :
+    valueTreeState(vts), tree(tr), requestService(requests)
 {
     addAndMakeVisible(welcome);
     checkLogin();
@@ -9,7 +9,8 @@ CloudComponent::CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::Va
     tree.addListener(this);
 }
 
-CloudComponent::~CloudComponent(){
+CloudComponent::~CloudComponent()
+{
     tree.removeListener(this);
 }
 

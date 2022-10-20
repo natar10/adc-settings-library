@@ -12,6 +12,37 @@
 
 struct LoginState
 {
-    bool isUserLoggedIn;
-    juce::String userName;
+    bool isUserLoggedIn{false};
+    juce::String userName{""};
+    juce::String id{""};
+};
+
+struct AccessToken
+{
+    explicit AccessToken(juce::String token) : accessToken(token)
+    {
+    }
+
+    juce::String toString() const
+    {
+        return accessToken;
+    }
+
+  private:
+    juce::String accessToken;
+};
+
+struct IdToken
+{
+    explicit IdToken(juce::String token) : idToken(token)
+    {
+    }
+
+    juce::String toString() const
+    {
+        return idToken;
+    }
+
+  private:
+    juce::String idToken;
 };
