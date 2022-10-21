@@ -20,6 +20,8 @@ class PluginComponent : public juce::Component, public ValueTree::Listener
 
     PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr);
 
+    ~PluginComponent();
+    
     void toggleSaveToCloud();
     void makeHttpRequest();
     void refreshAndResetForm();

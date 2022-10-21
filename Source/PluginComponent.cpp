@@ -56,6 +56,11 @@ PluginComponent::PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::
     setSize(400, 400);
 }
 
+PluginComponent::~PluginComponent()
+{
+    tree.removeListener(this);
+}
+
 void PluginComponent::toggleSaveToCloud()
 {
     privateButton.setVisible(!privateButton.isVisible());
