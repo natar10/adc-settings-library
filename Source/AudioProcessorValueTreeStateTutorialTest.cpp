@@ -14,7 +14,7 @@ GenericEditor::GenericEditor(juce::AudioProcessor& parent,
                              Requests& requests) :
     AudioProcessorEditor(parent),
     valueTreeState(vts), tree(tr), cloud(new CloudComponent(valueTreeState, tree, requests)),
-    plugin(new PluginComponent(valueTreeState, tree))
+    plugin(new PluginComponent(valueTreeState, tree, requests))
 {
     addAndMakeVisible(cloud.get());
     addAndMakeVisible(plugin.get());

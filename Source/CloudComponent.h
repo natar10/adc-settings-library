@@ -18,7 +18,7 @@ class CloudComponent : public juce::Component, public ValueTree::Listener
   public:
     CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr, Requests& requests);
 
-    ~CloudComponent();
+    virtual ~CloudComponent();
 
     void addLoginComponents();
     virtual void valueTreePropertyChanged(ValueTree& tree, const Identifier& property) override;

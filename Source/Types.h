@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <JuceHeader.h>
+
 //==============================================================================
 
 struct LoginState
@@ -17,9 +19,20 @@ struct LoginState
     juce::String id{""};
 };
 
+struct SaveSettingsParams
+{
+    int id;
+    juce::String project;
+    juce::String group;
+    juce::String xml;
+    juce::String settings;
+    bool isPublic;
+    bool isActive;
+};
+
 struct AccessToken
 {
-    explicit AccessToken(juce::String token) : accessToken(token)
+    explicit AccessToken(const juce::String& token) : accessToken(token)
     {
     }
 
@@ -32,9 +45,24 @@ struct AccessToken
     juce::String accessToken;
 };
 
+struct AuthorizationCode
+{
+    explicit AuthorizationCode(const juce::String& token) : authorizationToken(token)
+    {
+    }
+
+    juce::String toString() const
+    {
+        return authorizationToken;
+    }
+
+  private:
+    juce::String authorizationToken;
+};
+
 struct IdToken
 {
-    explicit IdToken(juce::String token) : idToken(token)
+    explicit IdToken(const juce::String& token) : idToken(token)
     {
     }
 
