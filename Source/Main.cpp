@@ -6,11 +6,14 @@
   ==============================================================================
 */
 
-#include <JuceHeader.h>
 #include "AudioProcessorValueTreeStateTutorialTest.h"
+#include <JuceHeader.h>
+#include "Requests.h"
+
+Requests requestService;
 
 //==============================================================================
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new TutorialProcessor();
+    return new TutorialProcessor(requestService);
 }

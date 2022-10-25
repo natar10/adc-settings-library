@@ -50,15 +50,11 @@
 
 #include "PluginComponent.h"
 #include "CloudComponent.h"
+#include "Requests.h"
+#include "Types.h"
 
 #include <JuceHeader.h>
 #include <memory>
-
-struct XMLSetting
-{
-    juce::String id;
-    juce::String project;
-};
 
 class GenericEditor : public juce::AudioProcessorEditor
 {
@@ -66,7 +62,10 @@ class GenericEditor : public juce::AudioProcessorEditor
     typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
     typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 
-    GenericEditor(juce::AudioProcessor& parent, juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr);
+    GenericEditor(juce::AudioProcessor& parent,
+                  juce::AudioProcessorValueTreeState& vts,
+                  juce::ValueTree& tr,
+                  Requests& requests);
 
     virtual void resized() override;
     virtual void paint(juce::Graphics& g) override;
@@ -83,7 +82,7 @@ class GenericEditor : public juce::AudioProcessorEditor
 class TutorialProcessor : public juce::AudioProcessor
 {
   public:
-    TutorialProcessor();
+    TutorialProcessor(Requests& loginState);
 
     virtual void prepareToPlay(double, int) override;
     void releaseResources() override;
@@ -110,10 +109,11 @@ class TutorialProcessor : public juce::AudioProcessor
     juce::AudioProcessorValueTreeState parameters;
     juce::ValueTree tree{"main"};
     float previousGain; // [1]
+    Requests& requestService;
 
     std::atomic<float>* phaseParameter = nullptr;
     std::atomic<float>* gainParameter = nullptr;
-    juce::File desktopDir = File::getSpecialLocation(File::userDesktopDirectory);
+    juce::File configFile;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TutorialProcessor)

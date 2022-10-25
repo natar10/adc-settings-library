@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "Requests.h"
 
 //==============================================================================
 
@@ -18,7 +19,9 @@ class PluginComponent : public juce::Component, public ValueTree::Listener
     typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
     typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 
-    PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr);
+    PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr, Requests& requests);
+
+    virtual ~PluginComponent();
 
     void toggleSaveToCloud();
     void makeHttpRequest();
@@ -44,4 +47,5 @@ class PluginComponent : public juce::Component, public ValueTree::Listener
     std::unique_ptr<ButtonAttachment> invertAttachment;
 
     juce::ToggleButton privateButton;
+    Requests& requestService;
 };

@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "Requests.h"
 #include <JuceHeader.h>
 
 //==============================================================================
@@ -15,7 +16,9 @@
 class CloudComponent : public juce::Component, public ValueTree::Listener
 {
   public:
-    CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr);
+    CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr, Requests& requests);
+
+    virtual ~CloudComponent();
 
     void addLoginComponents();
     virtual void valueTreePropertyChanged(ValueTree& tree, const Identifier& property) override;
@@ -46,4 +49,5 @@ class CloudComponent : public juce::Component, public ValueTree::Listener
     juce::TextButton initialLoginButton;
     juce::Label welcome;
     juce::Label results;
+    Requests& requestService;
 };

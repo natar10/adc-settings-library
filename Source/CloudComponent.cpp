@@ -1,12 +1,17 @@
 #include "CloudComponent.h"
 
-CloudComponent::CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr) :
-    valueTreeState(vts), tree(tr)
+CloudComponent::CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr, Requests& requests) :
+    valueTreeState(vts), tree(tr), requestService(requests)
 {
     addAndMakeVisible(welcome);
     checkLogin();
     setSize(500, 500);
     tree.addListener(this);
+}
+
+CloudComponent::~CloudComponent()
+{
+    tree.removeListener(this);
 }
 
 void CloudComponent::addLoginComponents()
@@ -141,25 +146,14 @@ void CloudComponent::hideLoginComponents()
 juce::var CloudComponent::getAllSettings()
 {
     DBG("-----------GET ALL SETTINGS----------");
-    adamski::RestRequest request;
-    request.header("Authorization", "Bearer " + tree.getProperty("idToken").toString());
-    adamski::RestRequest::Response response = request
-                                                  .get("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/"
-                                                       "settings")
-                                                  .execute();
-    return response.body;
+    return requestService.getAllSettings(IdToken(tree.getProperty("idToken").toString())).body;
 }
 
 void CloudComponent::stringToXml()
 {
     int selectedSetting = settingsList.getSelectedId();
-    adamski::RestRequest request;
-    request.header("Authorization", "Bearer " + tree.getProperty("idToken").toString());
-    adamski::RestRequest::Response response = request
-                                                  .get("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/"
-                                                       "settings/object/" +
-                                                       std::to_string(selectedSetting))
-                                                  .execute();
+    auto response = requestService.getSetting(IdToken(tree.getProperty("idToken").toString()), selectedSetting);
+
     if (response.status != 200) {
         results.setText("There was an error loading this setting", juce::dontSendNotification);
     } else {
@@ -172,26 +166,19 @@ void CloudComponent::stringToXml()
 void CloudComponent::checkLogin()
 {
     DBG("Tree CHECK LOGIN");
-    tree.setPropertyExcludingListener(this, "isUserActive", false, nullptr);
-    DBG("Tree ISUSER" << tree.getProperty("isUserActive").toString());
+    bool isUserActive = tree.getProperty("isUserActive");
+    DBG("*****isUserActive****" << tree.getProperty("isUserActive").toString());
 
-    if (tree.hasProperty("accessToken")) {
-
-        String userInfo = userInfoRequest(tree["accessToken"]);
-        DBG("************USER INFO****************" << userInfo);
-        if (userInfo == "Request Error") {
-            addLoginComponents();
-            userName.setText("Please Login", juce::dontSendNotification);
-        } else {
-            userName.setText(userInfoRequest(tree["accessToken"]), juce::dontSendNotification);
-            DBG("************LOGGED IN****************");
-            addCloudComponents();
-            hideLoginComponents();
-            tree.setProperty("isUserActive", true, nullptr);
-        }
-    } else {
+    if (!isUserActive) {
         addLoginComponents();
-        userName.setText("You are not logged in", juce::dontSendNotification);
+        userName.setText("Please Login", juce::dontSendNotification);
+        tree.setProperty("isUserActive", false, nullptr);
+    } else {
+        userName.setText(tree.getProperty("userName"), juce::dontSendNotification);
+        DBG("************LOGGED IN****************");
+        addCloudComponents();
+        hideLoginComponents();
+        tree.setProperty("isUserActive", true, nullptr);
     }
 
     DBG("Tree ISUSER--" << tree.getProperty("isUserActive").toString());
@@ -244,13 +231,9 @@ void CloudComponent::loginRequest()
     loginButton.setButtonText("Loading...");
     loginButton.setEnabled(false);
     juce::String authCode = authorizationCode.getTextValue().toString();
-    adamski::RestRequest request;
-    request.header("Content-Type", "application/json");
-    request.field("code", authCode);
-    adamski::RestRequest::Response response = request
-                                                  .post("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/"
-                                                        "auth")
-                                                  .execute();
+
+    auto response = requestService.exchangeAuthorizationCodeForTokens(AuthorizationCode(authCode));
+
     juce::String access_token = response.body.getProperty("access_token", "").toString();
     juce::String id_token = response.body.getProperty("id_token", "").toString();
     juce::String refresh_token = response.body.getProperty("refresh_token", "").toString();
@@ -269,13 +252,9 @@ void CloudComponent::loginRequest()
     }
 }
 
-juce::String CloudComponent::userInfoRequest(juce::String access_token)
+juce::String CloudComponent::userInfoRequest(juce::String accessToken)
 {
-    adamski::RestRequest request;
-    request.header("Content-Type", "application/x-www-form-urlencoded");
-    request.header("Authorization", "Bearer " + access_token);
-    adamski::RestRequest::Response response =
-        request.get("https://adc.auth.us-west-2.amazoncognito.com/oauth2/userInfo").execute();
+    auto response = requestService.userInfoRequest(AccessToken(accessToken));
 
     if (response.status == 200) {
         return response.body.getProperty("username", "").toString();

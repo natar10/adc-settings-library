@@ -1,4 +1,5 @@
 #include "PluginComponent.h"
+#include "Types.h"
 
 enum
 {
@@ -7,8 +8,8 @@ enum
     paramSliderWidth = 300
 };
 
-PluginComponent::PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr) :
-    valueTreeState(vts), tree(tr)
+PluginComponent::PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr, Requests& requests) :
+    valueTreeState(vts), tree(tr), requestService(requests)
 {
     gainLabel.setText("Gain", juce::dontSendNotification);
     addAndMakeVisible(gainLabel);
@@ -56,6 +57,11 @@ PluginComponent::PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::
     setSize(400, 400);
 }
 
+PluginComponent::~PluginComponent()
+{
+    tree.removeListener(this);
+}
+
 void PluginComponent::toggleSaveToCloud()
 {
     privateButton.setVisible(!privateButton.isVisible());
@@ -71,20 +77,20 @@ void PluginComponent::toggleSaveToCloud()
 
 void PluginComponent::makeHttpRequest()
 {
-    juce::Random random;
+    SaveSettingsParams saveSettingsParams;
     juce::String settingXml = valueTreeState.state.toXmlString();
-    adamski::RestRequest request;
-    request.header("Authorization", "Bearer " + tree.getProperty("idToken").toString());
-    request.header("Content-Type", "application/json");
-    request.field("id", String(random.nextInt()));
-    request.field("project", settingName.getTextValue().toString());
-    request.field("group", "tests");
-    request.field("xml", settingXml);
-    request.field("settings", "[]");
-    request.field("public", privateButton.getToggleStateValue());
-    request.field("active", true);
-    adamski::RestRequest::Response response =
-        request.put("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/settings").execute();
+    juce::Random random;
+
+    saveSettingsParams.id = random.nextInt();
+    saveSettingsParams.project = settingName.getTextValue().toString();
+    saveSettingsParams.group = "tests";
+    saveSettingsParams.xml = settingXml;
+    saveSettingsParams.settings = "";
+    saveSettingsParams.isPublic = static_cast<bool>(privateButton.getToggleStateValue().getValue());
+    saveSettingsParams.isActive = true;
+
+    auto response = requestService.saveSettings(IdToken(tree.getProperty("idToken").toString()), saveSettingsParams);
+
     refreshAndResetForm();
 }
 
