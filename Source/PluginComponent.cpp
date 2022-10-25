@@ -12,6 +12,7 @@ PluginComponent::PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::
     valueTreeState(vts), tree(tr), requestService(requests)
 {
     gainLabel.setText("Gain", juce::dontSendNotification);
+    gainLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(gainLabel);
 
     addAndMakeVisible(gainSlider);
@@ -36,6 +37,7 @@ PluginComponent::PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::
     }
 
     saveLabel.setText("Add the name of your setting to save:", juce::dontSendNotification);
+    saveLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addChildComponent(saveLabel);
 
     saveButton.setButtonText("Save");
@@ -49,12 +51,13 @@ PluginComponent::PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::
     addChildComponent(privateButton);
 
     settingName.setSize(100, 30);
+    settingName.setTextToShowWhenEmpty("Setting Name", juce::Colours::grey);
     settingName.setDescription("Add the name of your setting to save:");
     addChildComponent(settingName);
 
     tree.addListener(this);
 
-    setSize(400, 400);
+    setSize(400, 300);
 }
 
 PluginComponent::~PluginComponent()
@@ -120,7 +123,7 @@ void PluginComponent::valueTreePropertyChanged(ValueTree& tree, const Identifier
 
 void PluginComponent::resized()
 {
-    auto area = getLocalBounds();
+    auto area = getLocalBounds().reduced (10.0f);
 
     auto gainRect = area.removeFromTop(paramControlHeight);
     gainLabel.setBounds(gainRect.removeFromLeft(paramLabelWidth));
@@ -128,13 +131,15 @@ void PluginComponent::resized()
     invertButton.setBounds(area.removeFromTop(paramControlHeight));
 
     toggleSave.setBounds(area.removeFromBottom(30));
-    saveButton.setBounds(area.removeFromBottom(30));
-    settingName.setBounds(area.removeFromBottom(30));
-    privateButton.setBounds(area.removeFromBottom(30));
-    saveLabel.setBounds(area.removeFromBottom(30));
+    
+    saveLabel.setBounds(getWidth()/6.8, 80, getWidth()/1.3, 25);
+    privateButton.setBounds(getWidth()/6.6, 105, getWidth()/1.3, 25);
+    settingName.setBounds(getWidth()/6, 140, getWidth()/1.5, 25);
+    saveButton.setBounds(getWidth()/6, 175, getWidth()/1.5, 25);
+    
 }
 
 void PluginComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
+    g.fillAll (juce::Colour (3, 19, 24));
 }

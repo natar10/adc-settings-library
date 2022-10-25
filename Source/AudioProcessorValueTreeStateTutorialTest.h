@@ -73,7 +73,7 @@ class GenericEditor : public juce::AudioProcessorEditor
   private:
     juce::AudioProcessorValueTreeState& valueTreeState;
     juce::ValueTree& tree;
-    juce::TextButton showCloud;
+    juce::Label showCloud;
     std::unique_ptr<CloudComponent> cloud;
     std::unique_ptr<PluginComponent> plugin;
 };

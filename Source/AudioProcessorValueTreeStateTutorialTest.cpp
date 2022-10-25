@@ -19,17 +19,20 @@ GenericEditor::GenericEditor(juce::AudioProcessor& parent,
     addAndMakeVisible(cloud.get());
     addAndMakeVisible(plugin.get());
 
-    showCloud.setButtonText("Serverless Cloud Library");
+    showCloud.setText("SERVERLESS SETTING CLOUD LIBRARY", juce::dontSendNotification);
+    showCloud.setColour(juce::Label::backgroundColourId, juce::Colour(18, 18, 19));
+    showCloud.setColour(juce::Label::textColourId, juce::Colours::white);
+    showCloud.setJustificationType(Justification::centred);
     addAndMakeVisible(showCloud);
 
-    setSize(500, 600);
+    setSize(500, 300);
 }
 
 void GenericEditor::resized()
 {
     auto area = getLocalBounds();
     auto headerHeight = area.removeFromTop(36);
-    auto fromTop = area.removeFromTop(200);
+    auto fromTop = area.removeFromTop(250);
     showCloud.setBounds(headerHeight);
     cloud->setBounds(fromTop.removeFromLeft(200));
     plugin->setBounds(fromTop);

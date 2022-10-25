@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include <JuceHeader.h>
 #include "Requests.h"
+#include <JuceHeader.h>
 
 //==============================================================================
 
