@@ -6,157 +6,35 @@
 //  Copyright © 2022 JUCE. All rights reserved.
 //
 
-#ifndef PluginComponent_h
-#define PluginComponent_h
-
-
-#endif /* PluginComponent_h */
-
 #pragma once
+
+#include <JuceHeader.h>
+#include "Requests.h"
 
 //==============================================================================
 
 class PluginComponent : public juce::Component, public ValueTree::Listener
 {
-public:
-    enum
-    {
-        paramControlHeight = 40,
-        paramLabelWidth    = 80,
-        paramSliderWidth   = 300
-    };
-
+  public:
     typedef juce::AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
     typedef juce::AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 
-    PluginComponent (juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr)
-        : valueTreeState (vts), tree (tr)
-    {
-        gainLabel.setText ("Gain", juce::dontSendNotification);
-        addAndMakeVisible (gainLabel);
+    PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr, Requests& requests);
 
-        addAndMakeVisible (gainSlider);
-        gainAttachment.reset (new SliderAttachment (valueTreeState, "gain", gainSlider));
-        
-        invertButton.setButtonText ("Invert Phase");
-        addAndMakeVisible (invertButton);
-        invertAttachment.reset (new ButtonAttachment (valueTreeState, "invertPhase", invertButton));
-        
-        toggleSave.setButtonText("Save to Cloud");
-        toggleSave.setSize(100, 30);
-        toggleSave.onClick = [this] {toggleSaveToCloud();};
-        addChildComponent (toggleSave);
-        
-        DBG("xxxxxxxxTree Changes" << tree.getProperty("isUserActive").toString());
-        if(tree.getProperty("isUserActive")){
-            toggleSave.setVisible(true);
-        }else{
-            toggleSave.setVisible(false);
-        }
-        
-        saveLabel.setText ("Add the name of your setting to save:", juce::dontSendNotification);
-        addChildComponent (saveLabel);
-        
-        saveButton.setButtonText("Save");
-        saveButton.setSize(100, 30);
-        saveButton.onClick = [this] {makeHttpRequest();};
-        addChildComponent (saveButton);
-        
-        privateButton.setButtonText ("This setting should be public");
-        addChildComponent (privateButton);
-        
-        settingName.setSize(100, 30);
-        settingName.setDescription("Add the name of your setting to save:");
-        addChildComponent (settingName);
-        
-        tree.addListener(this);
+    virtual ~PluginComponent();
 
-        setSize (400, 400);
-        
-    }
-    
-    void toggleSaveToCloud ()
-    {
-        privateButton.setVisible(!privateButton.isVisible());
-        saveLabel.setVisible(!saveLabel.isVisible());
-        saveButton.setVisible(!saveButton.isVisible());
-        settingName.setVisible(!settingName.isVisible());
-        if(saveButton.isVisible()){
-            toggleSave.setButtonText("Hide Save to Cloud");
-        }else{
-            toggleSave.setButtonText("Save to Cloud");
-        }
-    }
-    
-    void makeHttpRequest ()
-    {
-        juce::Random random;
-        juce:String settingXml = valueTreeState.state.toXmlString();
-        adamski::RestRequest request;
-        request.header("Authorization", "Bearer " + tree.getProperty("idToken").toString());
-        request.header("Content-Type", "application/json");
-        request.field("id", String(random.nextInt()));
-        request.field("project", settingName.getTextValue().toString());
-        request.field("group", "tests");
-        request.field("xml", settingXml);
-        request.field("settings", "[]");
-        request.field("public", privateButton.getToggleStateValue());
-        request.field("active", true);
-        adamski::RestRequest::Response response = request
-        .put ("https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/settings")
-        .execute();
-        refreshAndResetForm();
-    }
-    
-    void refreshAndResetForm ()
-    {
-        settingName.setText("");
-        invertButton.setState(juce::ToggleButton::buttonDown);
-        toggleSaveToCloud();
-    }
-    
-    void toogleSaveButton (bool isEnabled)
-    {
-        toggleSave.setVisible(isEnabled);
-    }
-    
-    void valueTreePropertyChanged (ValueTree &tree, const Identifier &property) override
-    {
-        juce::Identifier active = "isUserActive";
-        if(property == active){
-            if(tree.hasProperty("isUserActive") && tree.getProperty("isUserActive")){
-                toogleSaveButton(true);
-            }else{
-                toogleSaveButton(false);
-            }
-        }
-    }
+    void toggleSaveToCloud();
+    void makeHttpRequest();
+    void refreshAndResetForm();
+    void toogleSaveButton(bool isEnabled);
+    virtual void valueTreePropertyChanged(ValueTree& tree, const Identifier& property) override;
+    virtual void resized() override;
+    void paint(juce::Graphics& g) override;
 
-    void resized() override
-    {
-        auto area = getLocalBounds();
-
-        auto gainRect = area.removeFromTop (paramControlHeight);
-        gainLabel .setBounds (gainRect.removeFromLeft (paramLabelWidth));
-        gainSlider.setBounds (gainRect);
-        invertButton.setBounds (area.removeFromTop (paramControlHeight));
-        
-        toggleSave.setBounds (area.removeFromBottom(30));
-        saveButton.setBounds (area.removeFromBottom(30));
-        settingName.setBounds (area.removeFromBottom(30));
-        privateButton.setBounds (area.removeFromBottom(30));
-        saveLabel.setBounds (area.removeFromBottom(30));
-    }
-
-    void paint (juce::Graphics& g) override
-    {
-        g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-    }
-
-private:
+  private:
     juce::AudioProcessorValueTreeState& valueTreeState;
     juce::ValueTree& tree;
-    
+
     juce::Label gainLabel;
     juce::Label saveLabel;
     juce::Slider gainSlider;
@@ -167,6 +45,7 @@ private:
 
     juce::ToggleButton invertButton;
     std::unique_ptr<ButtonAttachment> invertAttachment;
-    
+
     juce::ToggleButton privateButton;
+    Requests& requestService;
 };
