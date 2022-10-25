@@ -120,7 +120,8 @@ void CloudComponent::updateSettingsList()
 
 void CloudComponent::makeLoginVisible()
 {
-    system("open https://bit.ly/adclogin");
+    requestService.openLoginPageInDefaultWebBrowser();
+
     initialLoginButton.setVisible(false);
     welcome.setText("Login in the browser and paste your authorization code here:", juce::dontSendNotification);
     loginButton.setVisible(true);

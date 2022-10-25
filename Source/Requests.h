@@ -22,22 +22,34 @@ class Requests : public juce::Component
 
     struct Endpoints
     {
-        static constexpr const char* EXCHANGE_CODE_FOR_TOKEN_ENDPOINT =
-            "https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/auth";
 
-        static constexpr const char* USER_INFO_ENDPOINT =
-            "https://adc.auth.us-west-2.amazoncognito.com/oauth2/userInfo";
-
-        static constexpr const char* ALL_SETTINGS_ENDPOINT =
-            "https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/dev/settings";
-
-        static juce::String getSettingEndpoint(int settingName)
+        struct Server
         {
-            return juce::String(ALL_SETTINGS_ENDPOINT) + "/object/" + std::to_string(settingName);
-        }
+            static constexpr const char* SERVER_URL = "https://xfmzpgomj5.execute-api.us-west-2.amazonaws.com/";
+
+            static constexpr const char* EXCHANGE_CODE_FOR_TOKEN_ENDPOINT = "dev/auth";
+
+            static constexpr const char* ALL_SETTINGS_ENDPOINT = "dev/settings";
+
+            static juce::String getSettingEndpoint(int settingName)
+            {
+                juce::String endpoint(ALL_SETTINGS_ENDPOINT);
+                return endpoint + "/object/" + std::to_string(settingName);
+            }
+        };
+
+        struct Auth
+        {
+            static constexpr const char* AUTH_SERVER_URL = "https://adc.auth.us-west-2.amazoncognito.com/";
+            static constexpr const char* LOGIN_URL = "https://bit.ly/adclogin";
+
+            static constexpr const char* USER_INFO_ENDPOINT =
+                "https://adc.auth.us-west-2.amazoncognito.com/oauth2/userInfo";
+        };
     };
 
     LoginState isUserLoggedIn(const AccessToken& accessToken);
+    void openLoginPageInDefaultWebBrowser() const;
     adamski::RestRequest::Response userInfoRequest(const AccessToken& accessToken);
     adamski::RestRequest::Response exchangeAuthorizationCodeForTokens(const AuthorizationCode& authorizationToken);
     adamski::RestRequest::Response getSetting(const IdToken& idToken, int selectedSettingId);

@@ -13,11 +13,16 @@
 
 class RestRequest
 {
-public:
-
-    RestRequest (String urlString) : url (urlString) {}
-    RestRequest (URL url)          : url (url) {}
-    RestRequest () {}
+  public:
+    RestRequest(String urlString) : url(urlString)
+    {
+    }
+    RestRequest(URL url) : url(url)
+    {
+    }
+    RestRequest()
+    {
+    }
 
     struct Response
     {
@@ -27,26 +32,37 @@ public:
         String bodyAsString;
         int status;
 
-        Response() : result (Result::ok()), status (0) {} // not sure about using Result if we have to initialise it to ok...
+        Response() : result(Result::ok()), status(0)
+        {
+        } // not sure about using Result if we have to initialise it to ok...
     } response;
 
-
-    RestRequest::Response execute ()
+    RestRequest::Response execute()
     {
-        auto urlRequest = url.getChildURL (endpoint);
+        auto urlRequest = url.getChildURL(endpoint);
         bool hasFields = (fields.getProperties().size() > 0);
-        if (hasFields)
-        {
+        if (hasFields) {
             MemoryOutputStream output;
 
-            fields.writeAsJSON (output, 0, false, 20);
-            urlRequest = urlRequest.withPOSTData (output.toString());
+            fields.writeAsJSON(output, 0, false, 20);
+            urlRequest = urlRequest.withPOSTData(output.toString());
         }
 
-        std::unique_ptr<InputStream> input (urlRequest.createInputStream (hasFields, nullptr, nullptr, stringPairArrayToHeaderString(headers), 0, &response.headers, &response.status, 5, verb));
+        auto paramHandling = hasFields ? URL::ParameterHandling::inPostData : URL::ParameterHandling::inAddress;
+        std::unique_ptr<InputStream> input(
+            urlRequest.createInputStream(URL::InputStreamOptions(paramHandling)
+                                             .withExtraHeaders(stringPairArrayToHeaderString(headers))
+                                             .withConnectionTimeoutMs(0)
+                                             .withStatusCode(0)
+                                             .withResponseHeaders(&response.headers)
+                                             .withStatusCode(&response.status)
+                                             .withNumRedirectsToFollow(5)
+                                             .withHttpRequestCmd(verb)));
 
-        response.result = checkInputStream (input);
-        if (response.result.failed()) return response;
+        response.result = checkInputStream(input);
+
+        if (response.result.failed())
+            return response;
 
         response.bodyAsString = input->readEntireStreamAsString();
         response.result = JSON::parse(response.bodyAsString, response.body);
@@ -54,53 +70,52 @@ public:
         return response;
     }
 
-
-    RestRequest get (const String& endpoint)
+    RestRequest get(const String& endpoint)
     {
-        RestRequest req (*this);
+        RestRequest req(*this);
         req.verb = "GET";
         req.endpoint = endpoint;
 
         return req;
     }
 
-    RestRequest post (const String& endpoint)
+    RestRequest post(const String& endpoint)
     {
-        RestRequest req (*this);
+        RestRequest req(*this);
         req.verb = "POST";
         req.endpoint = endpoint;
 
         return req;
     }
 
-    RestRequest put (const String& endpoint)
+    RestRequest put(const String& endpoint)
     {
-        RestRequest req (*this);
+        RestRequest req(*this);
         req.verb = "PUT";
         req.endpoint = endpoint;
 
         return req;
     }
 
-    RestRequest del (const String& endpoint)
+    RestRequest del(const String& endpoint)
     {
-        RestRequest req (*this);
+        RestRequest req(*this);
         req.verb = "DELETE";
         req.endpoint = endpoint;
 
         return req;
     }
 
-    RestRequest field (const String& name, const var& value)
+    RestRequest field(const String& name, const var& value)
     {
         fields.setProperty(name, value);
         return *this;
     }
 
-    RestRequest header (const String& name, const String& value)
+    RestRequest header(const String& name, const String& value)
     {
-        RestRequest req (*this);
-        headers.set (name, value);
+        RestRequest req(*this);
+        headers.set(name, value);
         return req;
     }
 
@@ -114,7 +129,7 @@ public:
         return bodyAsString;
     }
 
-private:
+  private:
     URL url;
     StringPairArray headers;
     String verb;
@@ -122,23 +137,21 @@ private:
     DynamicObject fields;
     String bodyAsString;
 
-    Result checkInputStream (std::unique_ptr<InputStream>& input)
+    Result checkInputStream(std::unique_ptr<InputStream>& input)
     {
-        if (! input) return Result::fail ("HTTP request failed, check your internet connection");
+        if (!input)
+            return Result::fail("HTTP request failed, check your internet connection");
         return Result::ok();
     }
 
     static String stringPairArrayToHeaderString(StringPairArray stringPairArray)
     {
         String result;
-        for (auto key : stringPairArray.getAllKeys())
-        {
+        for (auto key : stringPairArray.getAllKeys()) {
             result += key + ": " + stringPairArray.getValue(key, "") + "\n";
         }
         return result;
     }
 };
 
-
-
-#endif  // RESTREQUEST_H_INCLUDED
+#endif // RESTREQUEST_H_INCLUDED
