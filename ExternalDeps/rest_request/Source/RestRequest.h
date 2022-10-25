@@ -53,7 +53,6 @@ class RestRequest
             urlRequest.createInputStream(URL::InputStreamOptions(paramHandling)
                                              .withExtraHeaders(stringPairArrayToHeaderString(headers))
                                              .withConnectionTimeoutMs(0)
-                                             .withStatusCode(0)
                                              .withResponseHeaders(&response.headers)
                                              .withStatusCode(&response.status)
                                              .withNumRedirectsToFollow(5)
