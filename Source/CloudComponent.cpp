@@ -25,7 +25,7 @@ void CloudComponent::addLoginComponents()
     welcome.setText("Login and sync up settings", juce::dontSendNotification);
     welcome.setJustificationType(Justification::horizontallyJustified);
     
-    initialLoginButton.setButtonText("Log in");
+    initialLoginButton.setButtonText("Start Here");
     initialLoginButton.setSize(100, 30);
     initialLoginButton.onClick = [this] {
         makeLoginVisible();
