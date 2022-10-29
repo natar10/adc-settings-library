@@ -166,23 +166,20 @@ void CloudComponent::stringToXml()
 
 void CloudComponent::checkLogin()
 {
-    DBG("Tree CHECK LOGIN");
-    bool isUserActive = tree.getProperty("isUserActive");
-    DBG("*****isUserActive****" << tree.getProperty("isUserActive").toString());
-
-    if (!isUserActive) {
+    LoginState loginState =  requestService.isUserLoggedIn(AccessToken(tree.getProperty("accessToken")));
+    
+    if (!loginState.isUserLoggedIn) {
+        DBG("************NOT LOGGED IN****************");
         addLoginComponents();
         userName.setText("Please Login", juce::dontSendNotification);
         tree.setProperty("isUserActive", false, nullptr);
     } else {
-        userName.setText(tree.getProperty("userName"), juce::dontSendNotification);
+        userName.setText(loginState.userName, juce::dontSendNotification);
         DBG("************LOGGED IN****************");
         addCloudComponents();
         hideLoginComponents();
         tree.setProperty("isUserActive", true, nullptr);
     }
-
-    DBG("Tree ISUSER--" << tree.getProperty("isUserActive").toString());
 }
 
 void CloudComponent::resized()
