@@ -48,6 +48,7 @@ class CloudComponent : public juce::Component, public ValueTree::Listener
     juce::Label userName;
     juce::TextButton initialLoginButton;
     juce::Label welcome;
+    juce::Label title;
     juce::Label results;
     Requests& requestService;
 };
