@@ -25,14 +25,14 @@ GenericEditor::GenericEditor(juce::AudioProcessor& parent,
     showCloud.setJustificationType(Justification::centred);
     addAndMakeVisible(showCloud);
 
-    setSize(500, 300);
+    setSize(Styles::editorWidth, Styles::defaultHeight);
 }
 
 void GenericEditor::resized()
 {
     auto area = getLocalBounds();
     auto headerHeight = area.removeFromTop(36);
-    auto fromTop = area.removeFromTop(250);
+    auto fromTop = area.removeFromTop(Styles::editorFromTop);
     showCloud.setBounds(headerHeight);
     cloud->setBounds(fromTop.removeFromLeft(200));
     plugin->setBounds(fromTop);

@@ -50,15 +50,20 @@ PluginComponent::PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::
 
     privateButton.setButtonText("This setting should be public");
     addChildComponent(privateButton);
-
+    
     settingName.setSize(100, 30);
     settingName.setTextToShowWhenEmpty("Setting Name", juce::Colours::grey);
     settingName.setDescription("Add the name of your setting to save:");
     addChildComponent(settingName);
+    
+    settingDescription.setSize(100, 50);
+    settingDescription.setTextToShowWhenEmpty("Setting Description", juce::Colours::grey);
+    settingDescription.setDescription("Add a description:");
+    addChildComponent(settingDescription);
 
     tree.addListener(this);
 
-    setSize(400, 300);
+    setSize(Styles::puglinWidth, Styles::defaultHeight);
 }
 
 PluginComponent::~PluginComponent()
@@ -72,6 +77,7 @@ void PluginComponent::toggleSaveToCloud()
     saveLabel.setVisible(!saveLabel.isVisible());
     saveButton.setVisible(!saveButton.isVisible());
     settingName.setVisible(!settingName.isVisible());
+    settingDescription.setVisible(!settingDescription.isVisible());
     if (saveButton.isVisible()) {
         toggleSave.setButtonText("Hide Save to Cloud");
     } else {
@@ -85,9 +91,10 @@ void PluginComponent::makeHttpRequest()
     juce::String settingXml = valueTreeState.state.toXmlString();
     juce::Random random;
 
-    saveSettingsParams.id = random.nextInt();
+    saveSettingsParams.id = abs(random.nextInt());
     saveSettingsParams.project = settingName.getTextValue().toString();
-    saveSettingsParams.group = "tests";
+    saveSettingsParams.description = settingDescription.getTextValue().toString();
+    saveSettingsParams.group = "vst";
     saveSettingsParams.xml = settingXml;
     saveSettingsParams.settings = "";
     saveSettingsParams.isPublic = static_cast<bool>(privateButton.getToggleStateValue().getValue());
@@ -101,6 +108,7 @@ void PluginComponent::makeHttpRequest()
 void PluginComponent::refreshAndResetForm()
 {
     settingName.setText("");
+    settingDescription.setText("");
     invertButton.setState(juce::ToggleButton::buttonDown);
     toggleSaveToCloud();
 }
@@ -136,7 +144,8 @@ void PluginComponent::resized()
     saveLabel.setBounds(getWidth()/6.8, 80, getWidth()/1.3, 25);
     privateButton.setBounds(getWidth()/6.6, 105, getWidth()/1.3, 25);
     settingName.setBounds(getWidth()/6, 140, getWidth()/1.5, 25);
-    saveButton.setBounds(getWidth()/6, 175, getWidth()/1.5, 25);
+    settingDescription.setBounds(getWidth()/6, 175, getWidth()/1.5, 35);
+    saveButton.setBounds(getWidth()/6, 220, getWidth()/1.5, 25);
     
 }
 
