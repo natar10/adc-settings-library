@@ -7,7 +7,7 @@ CloudComponent::CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::Va
     addAndMakeVisible(welcome);
     addAndMakeVisible(title);
     checkLogin();
-    setSize(500, 300);
+    setSize(Styles::cloudWidth, Styles::defaultHeight);
     tree.addListener(this);
 }
 
@@ -203,7 +203,7 @@ void CloudComponent::placeComponentsForLogin()
 void CloudComponent::placeComponentsForSettings()
 {
     welcome.setBounds(getX()+12, 25, getWidth()-24, 70);
-    userName.setBounds(getX()+12, 70, getWidth(), 30);
+    userName.setBounds(getX()+12, 75, getWidth(), 30);
     refreshButton.setBounds(getWidth()-80, 105, 60, 20);
     settingsList.setBounds(getX()+20, 130, getWidth()-40, 25);
     loadButton.setBounds(getWidth()/6, 165, getWidth()/1.5, 25);

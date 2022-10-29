@@ -23,6 +23,7 @@ struct SaveSettingsParams
 {
     int id;
     juce::String project;
+    juce::String description;
     juce::String group;
     juce::String xml;
     juce::String settings;
@@ -74,3 +75,13 @@ struct IdToken
   private:
     juce::String idToken;
 };
+
+struct Styles
+{
+    constexpr static int puglinWidth = 400;
+    constexpr static int cloudWidth = 500;
+    constexpr static int editorWidth = 500;
+    constexpr static int defaultHeight = 340;
+    constexpr static int editorFromTop = 300;
+};
+

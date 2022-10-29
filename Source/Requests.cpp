@@ -79,6 +79,7 @@ adamski::RestRequest::Response Requests::saveSettings(const IdToken& idToken,
     request.header("Content-Type", "application/json");
     request.field("id", juce::String(saveSettingsParams.id));
     request.field("project", saveSettingsParams.project);
+    request.field("description", saveSettingsParams.description);
     request.field("group", saveSettingsParams.group);
     request.field("xml", saveSettingsParams.xml);
     request.field("settings", saveSettingsParams.settings);

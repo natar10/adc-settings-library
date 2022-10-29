@@ -41,6 +41,7 @@ class PluginComponent : public juce::Component, public ValueTree::Listener
     juce::TextButton toggleSave;
     juce::TextButton saveButton;
     juce::TextEditor settingName;
+    juce::TextEditor settingDescription;
     std::unique_ptr<SliderAttachment> gainAttachment;
 
     juce::ToggleButton invertButton;
