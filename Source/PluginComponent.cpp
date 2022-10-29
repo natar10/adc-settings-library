@@ -23,7 +23,8 @@ PluginComponent::PluginComponent(juce::AudioProcessorValueTreeState& vts, juce::
     invertAttachment.reset(new ButtonAttachment(valueTreeState, "invertPhase", invertButton));
 
     toggleSave.setButtonText("Save to Cloud");
-    toggleSave.setSize(100, 30);
+    toggleSave.setSize(60, 30);
+    toggleSave.setColour(juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     toggleSave.onClick = [this] {
         toggleSaveToCloud();
     };
@@ -130,7 +131,7 @@ void PluginComponent::resized()
     gainSlider.setBounds(gainRect);
     invertButton.setBounds(area.removeFromTop(paramControlHeight));
 
-    toggleSave.setBounds(area.removeFromBottom(30));
+    toggleSave.setBounds(area.removeFromBottom(30).removeFromRight(70));
     
     saveLabel.setBounds(getWidth()/6.8, 80, getWidth()/1.3, 25);
     privateButton.setBounds(getWidth()/6.6, 105, getWidth()/1.3, 25);

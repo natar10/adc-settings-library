@@ -203,11 +203,11 @@ void CloudComponent::placeComponentsForLogin()
 void CloudComponent::placeComponentsForSettings()
 {
     welcome.setBounds(getX()+12, 25, getWidth()-24, 70);
-    userName.setBounds(getX()+12, 50, getWidth(), 30);
-    refreshButton.setBounds(getWidth()-80, 85, 60, 20);
-    settingsList.setBounds(getX()+20, 110, getWidth()-40, 25);
-    loadButton.setBounds(getWidth()/6, 145, getWidth()/1.5, 25);
-    results.setBounds(getX()+12, 175, getWidth()-12, 30);
+    userName.setBounds(getX()+12, 70, getWidth(), 30);
+    refreshButton.setBounds(getWidth()-80, 105, 60, 20);
+    settingsList.setBounds(getX()+20, 130, getWidth()-40, 25);
+    loadButton.setBounds(getWidth()/6, 165, getWidth()/1.5, 25);
+    results.setBounds(getX()+12, 195, getWidth()-12, 30);
 }
 
 void CloudComponent::paint(juce::Graphics& g)
@@ -235,7 +235,7 @@ void CloudComponent::loginRequest()
         loginButton.setEnabled(true);
         loginButton.setButtonText("Login");
     } else {
-        hideLoginComponents();
+//        hideLoginComponents();
         tree.setPropertyExcludingListener(this, "accessToken", access_token, nullptr);
         tree.setPropertyExcludingListener(this, "idToken", id_token, nullptr);
         tree.setPropertyExcludingListener(this, "refreshToken", refresh_token, nullptr);
@@ -246,7 +246,7 @@ void CloudComponent::loginRequest()
 juce::String CloudComponent::userInfoRequest(juce::String accessToken)
 {
     auto response = requestService.userInfoRequest(AccessToken(accessToken));
-
+    DBG("USER RESPONSE" << response.bodyAsString);
     if (response.status == 200) {
         return response.body.getProperty("username", "").toString();
     } else {

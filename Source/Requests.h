@@ -44,7 +44,7 @@ class Requests : public juce::Component
             static constexpr const char* LOGIN_URL = "https://bit.ly/adclogin";
 
             static constexpr const char* USER_INFO_ENDPOINT =
-                "https://adc.auth.us-west-2.amazoncognito.com/oauth2/userInfo";
+                "oauth2/userInfo";
         };
     };
 
