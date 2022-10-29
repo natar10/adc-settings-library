@@ -123,7 +123,8 @@ void CloudComponent::updateSettingsList()
 
 void CloudComponent::makeLoginVisible()
 {
-    system("open https://bit.ly/adclogin");
+    requestService.openLoginPageInDefaultWebBrowser();
+
     initialLoginButton.setVisible(false);
     welcome.setText("Login in the browser and paste your authorization code here:", juce::dontSendNotification);
     loginButton.setVisible(true);
@@ -165,14 +166,16 @@ void CloudComponent::stringToXml()
 
 void CloudComponent::checkLogin()
 {
-    bool isUserActive = tree.getProperty("isUserActive");
- 
-    if (!isUserActive) {
+    LoginState loginState =  requestService.isUserLoggedIn(AccessToken(tree.getProperty("accessToken")));
+    
+    if (!loginState.isUserLoggedIn) {
+        DBG("************NOT LOGGED IN****************");
         addLoginComponents();
         userName.setText("Please Login", juce::dontSendNotification);
         tree.setProperty("isUserActive", false, nullptr);
     } else {
-        userName.setText(tree.getProperty("userName"), juce::dontSendNotification);
+        userName.setText(loginState.userName, juce::dontSendNotification);
+        DBG("************LOGGED IN****************");
         addCloudComponents();
         hideLoginComponents();
         tree.setProperty("isUserActive", true, nullptr);
