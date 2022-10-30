@@ -41,7 +41,7 @@ class Requests : public juce::Component
         struct Auth
         {
             static constexpr const char* AUTH_SERVER_URL = "https://adc.auth.us-west-2.amazoncognito.com/";
-            static constexpr const char* LOGIN_URL = "https://bit.ly/adclogin";
+            static constexpr const char* LOGIN_URL = "https://bit.ly/loginadc";
 
             static constexpr const char* USER_INFO_ENDPOINT =
                 "oauth2/userInfo";
