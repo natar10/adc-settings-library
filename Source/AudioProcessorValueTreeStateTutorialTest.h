@@ -51,6 +51,7 @@
 #include "PluginComponent.h"
 #include "CloudComponent.h"
 #include "Requests.h"
+#include "XmlData.h"
 #include "Types.h"
 
 #include <JuceHeader.h>
@@ -65,7 +66,8 @@ class GenericEditor : public juce::AudioProcessorEditor
     GenericEditor(juce::AudioProcessor& parent,
                   juce::AudioProcessorValueTreeState& vts,
                   juce::ValueTree& tr,
-                  Requests& requests);
+                  Requests& requests,
+                  XmlData& xmlData);
 
     virtual void resized() override;
     virtual void paint(juce::Graphics& g) override;
@@ -82,13 +84,11 @@ class GenericEditor : public juce::AudioProcessorEditor
 class TutorialProcessor : public juce::AudioProcessor
 {
   public:
-    TutorialProcessor(Requests& loginState);
+    TutorialProcessor(Requests& loginState, XmlData& xmlData);
 
     virtual void prepareToPlay(double, int) override;
     void releaseResources() override;
     void processBlock(juce::AudioSampleBuffer& buffer, juce::MidiBuffer&) override;
-    void exportValueTreeToXML();
-    void loadXMLfromFile();
     virtual juce::AudioProcessorEditor* createEditor() override;
     virtual bool hasEditor() const override;
     const juce::String getName() const override;
@@ -110,10 +110,10 @@ class TutorialProcessor : public juce::AudioProcessor
     juce::ValueTree tree{"main"};
     float previousGain; // [1]
     Requests& requestService;
+    XmlData& xmlDataService;
 
     std::atomic<float>* phaseParameter = nullptr;
     std::atomic<float>* gainParameter = nullptr;
-    juce::File configFile;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TutorialProcessor)

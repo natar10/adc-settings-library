@@ -1,5 +1,5 @@
 //
-//  CloudComponent.h
+//  Requests.h
 //  AudioProcessorValueTreeStateTutorial
 //
 //  Created by Nat Rocha on 14/10/22.
@@ -55,8 +55,6 @@ class Requests : public juce::Component
     adamski::RestRequest::Response getSetting(const IdToken& idToken, int selectedSettingId);
     adamski::RestRequest::Response getAllSettings(const IdToken& idToken);
     adamski::RestRequest::Response saveSettings(const IdToken& idToken, const SaveSettingsParams& saveSettingsRequest);
-
-    void loadXMLfromFile();
 
   private:
     std::unordered_map<juce::String, LoginState> loginCache;
