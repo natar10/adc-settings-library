@@ -1,5 +1,6 @@
 #include "AudioProcessorValueTreeStateTutorialTest.h"
 #include "Requests.h"
+#include "XmlData.h"
 
 enum
 {
@@ -11,9 +12,10 @@ enum
 GenericEditor::GenericEditor(juce::AudioProcessor& parent,
                              juce::AudioProcessorValueTreeState& vts,
                              juce::ValueTree& tr,
-                             Requests& requests) :
+                             Requests& requests,
+                             XmlData& xmlData) :
     AudioProcessorEditor(parent),
-    valueTreeState(vts), tree(tr), cloud(new CloudComponent(valueTreeState, tree, requests)),
+    valueTreeState(vts), tree(tr), cloud(new CloudComponent(valueTreeState, tree, requests, xmlData)),
     plugin(new PluginComponent(valueTreeState, tree, requests))
 {
     addAndMakeVisible(cloud.get());
@@ -43,7 +45,7 @@ void GenericEditor::paint(juce::Graphics& g)
     g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
 }
 
-TutorialProcessor::TutorialProcessor(Requests& requests) :
+TutorialProcessor::TutorialProcessor(Requests& requests, XmlData& xmlData) :
     parameters(*this,
                nullptr,
                juce::Identifier("APVTSTutorial"),
@@ -58,7 +60,7 @@ TutorialProcessor::TutorialProcessor(Requests& requests) :
                                                               false)          // default value
                }),
     requestService(requests),
-    configFile(File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile("natar10/saveData.xml"))
+    xmlDataService(xmlData)
 {
     phaseParameter = parameters.getRawParameterValue("invertPhase");
     gainParameter = parameters.getRawParameterValue("gain");
@@ -87,32 +89,9 @@ void TutorialProcessor::processBlock(juce::AudioSampleBuffer& buffer, juce::Midi
     }
 }
 
-void TutorialProcessor::exportValueTreeToXML()
-{
-
-    if (!configFile.exists()) {
-        configFile.create();
-    }
-
-    std::unique_ptr<juce::XmlElement> vtXML(tree.createXml());
-
-    if (!(vtXML->writeTo(configFile))) {
-        DBG("FAIL");
-    }
-}
-
-void TutorialProcessor::loadXMLfromFile()
-{
-    if (configFile.existsAsFile()) {
-        XmlDocument xmlDoc(configFile);
-        if (auto mainElement = xmlDoc.getDocumentElement())
-            tree = tree.fromXml(*mainElement);
-    }
-}
-
 juce::AudioProcessorEditor* TutorialProcessor::createEditor()
 {
-    return new GenericEditor(*this, parameters, tree, requestService);
+    return new GenericEditor(*this, parameters, tree, requestService, xmlDataService);
 }
 
 bool TutorialProcessor::hasEditor() const
@@ -169,7 +148,7 @@ void TutorialProcessor::getStateInformation(juce::MemoryBlock& destData)
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
     copyXmlToBinary(*xml, destData);
     if (tree.hasProperty("accessToken"))
-        exportValueTreeToXML();
+        xmlDataService.exportValueTreeToXML(tree.toXmlString());
 }
 
 void TutorialProcessor::setStateInformation(const void* data, int sizeInBytes)
@@ -178,7 +157,7 @@ void TutorialProcessor::setStateInformation(const void* data, int sizeInBytes)
     if (xmlState.get() != nullptr)
         if (xmlState->hasTagName(parameters.state.getType()))
             parameters.replaceState(juce::ValueTree::fromXml(*xmlState));
-    loadXMLfromFile();
+    tree = tree.fromXml(*xmlDataService.loadXMLfromFile());
     // tree.setProperty("isUserActive", userState.isUserLoggedIn, nullptr);
     // tree.setProperty("userName", userState.userName, nullptr);
 }

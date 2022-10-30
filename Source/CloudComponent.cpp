@@ -1,7 +1,7 @@
 #include "CloudComponent.h"
 
-CloudComponent::CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr, Requests& requests) :
-    valueTreeState(vts), tree(tr), requestService(requests)
+CloudComponent::CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr, Requests& requests, XmlData& xmlData) :
+    valueTreeState(vts), tree(tr), requestService(requests), xmlDataService(xmlData)
 {
     getLookAndFeel().setColour (juce::Label::textColourId, juce::Colours::darkgrey);
     addAndMakeVisible(welcome);
@@ -56,20 +56,14 @@ void CloudComponent::valueTreePropertyChanged(ValueTree& tree, const Identifier&
         if (tree.hasProperty("accessToken")) {
             updateUserName();
         }
-        DBG("Tree Changes" << tree.getProperty("isUserActive").toString());
         if (tree.hasProperty("isUserActive") && tree.getProperty("isUserActive")) {
-            DBG("Tree isUserActive exists and is true");
-
-            DBG("************LISTENER LLAMA A CLOUD****************");
             addCloudComponents();
             hideLoginComponents();
             placeComponentsForSettings();
-            // plugin->toogleSaveButton(true);
         } else {
-            DBG("Tree isUserActive is false");
             addLoginComponents();
+            hideCloudComponents();
             placeComponentsForLogin();
-            // plugin->toogleSaveButton(false);
         }
     }
 }
@@ -79,16 +73,28 @@ void CloudComponent::addCloudComponents()
     addChildComponent(settingsList);
     addChildComponent(results);
     addChildComponent(loadButton);
+    addChildComponent(logout);
     addChildComponent(refreshButton);
     addChildComponent(userName);
 
+    settingsList.onChange = [this] {
+        enableLoadButton();
+    };
     updateSettingsList();
 
     loadButton.setButtonText("Load Configuration");
+    loadButton.setEnabled(false);
     loadButton.setSize(100, 30);
     loadButton.onClick = [this] {
         stringToXml();
     };
+    
+    logout.setButtonText("Logout");
+    logout.setSize(60, 30);
+    logout.setColour(juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    logout.setColour(juce::TextButton::textColourOffId, juce::Colours::black);
+    logout.setColour(juce::TextButton::textColourOnId, juce::Colours::black);
+    logout.onClick = [this] { logoutRequest(); };
 
     refreshButton.setButtonText("Refresh");
     refreshButton.setColour(juce::TextButton::buttonColourId, juce::Colours::white);
@@ -97,6 +103,21 @@ void CloudComponent::addCloudComponents()
     refreshButton.onClick = [this] {
         updateSettingsList();
     };
+}
+
+void CloudComponent::enableLoadButton()
+{
+    loadButton.setEnabled(settingsList.getSelectedId());
+}
+
+void CloudComponent::hideCloudComponents()
+{
+    settingsList.setVisible(false);
+    results.setVisible(false);
+    loadButton.setVisible(false);
+    logout.setVisible(false);
+    refreshButton.setVisible(false);
+    userName.setVisible(false);
 }
 
 void CloudComponent::updateUserName()
@@ -139,6 +160,7 @@ void CloudComponent::hideLoginComponents()
     userName.setVisible(true);
     settingsList.setVisible(true);
     loadButton.setVisible(true);
+    logout.setVisible(true);
     refreshButton.setVisible(true);
     results.setVisible(true);
     welcome.setText("Welcome! These are your cloud settings:", juce::dontSendNotification);
@@ -202,12 +224,14 @@ void CloudComponent::placeComponentsForLogin()
 
 void CloudComponent::placeComponentsForSettings()
 {
+    auto area = getLocalBounds().reduced (14.0f);
     welcome.setBounds(getX()+12, 25, getWidth()-24, 70);
     userName.setBounds(getX()+12, 75, getWidth(), 30);
     refreshButton.setBounds(getWidth()-80, 105, 60, 20);
     settingsList.setBounds(getX()+20, 130, getWidth()-40, 25);
     loadButton.setBounds(getWidth()/6, 165, getWidth()/1.5, 25);
     results.setBounds(getX()+12, 195, getWidth()-12, 30);
+    logout.setBounds(area.removeFromBottom(25).removeFromRight(70));
 }
 
 void CloudComponent::paint(juce::Graphics& g)
@@ -235,18 +259,25 @@ void CloudComponent::loginRequest()
         loginButton.setEnabled(true);
         loginButton.setButtonText("Login");
     } else {
-//        hideLoginComponents();
         tree.setPropertyExcludingListener(this, "accessToken", access_token, nullptr);
         tree.setPropertyExcludingListener(this, "idToken", id_token, nullptr);
         tree.setPropertyExcludingListener(this, "refreshToken", refresh_token, nullptr);
         tree.setProperty("isUserActive", true, nullptr);
+        xmlDataService.exportValueTreeToXML(tree.toXmlString());
     }
+}
+
+void CloudComponent::logoutRequest()
+{
+    logout.setEnabled(false);
+    tree.setProperty("isUserActive", false, nullptr);
+    tree.removeAllProperties(nullptr);
+    xmlDataService.exportValueTreeToXML(tree.toXmlString());
 }
 
 juce::String CloudComponent::userInfoRequest(juce::String accessToken)
 {
     auto response = requestService.userInfoRequest(AccessToken(accessToken));
-    DBG("USER RESPONSE" << response.bodyAsString);
     if (response.status == 200) {
         return response.body.getProperty("username", "").toString();
     } else {

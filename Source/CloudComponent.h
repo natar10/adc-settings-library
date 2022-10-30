@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Requests.h"
+#include "XmlData.h"
 #include <JuceHeader.h>
 
 //==============================================================================
@@ -16,13 +17,15 @@
 class CloudComponent : public juce::Component, public ValueTree::Listener
 {
   public:
-    CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr, Requests& requests);
+    CloudComponent(juce::AudioProcessorValueTreeState& vts, juce::ValueTree& tr, Requests& requests, XmlData& xmlData);
 
     virtual ~CloudComponent();
 
     void addLoginComponents();
     virtual void valueTreePropertyChanged(ValueTree& tree, const Identifier& property) override;
     void addCloudComponents();
+    void hideCloudComponents();
+    void enableLoadButton();
     void updateUserName();
     void updateSettingsList();
     void makeLoginVisible();
@@ -35,6 +38,7 @@ class CloudComponent : public juce::Component, public ValueTree::Listener
     void placeComponentsForSettings();
     virtual void paint(juce::Graphics& g) override;
     void loginRequest();
+    void logoutRequest();
     juce::String userInfoRequest(juce::String access_token);
 
   private:
@@ -47,8 +51,10 @@ class CloudComponent : public juce::Component, public ValueTree::Listener
     juce::TextButton refreshButton;
     juce::Label userName;
     juce::TextButton initialLoginButton;
+    juce::TextButton logout;
     juce::Label welcome;
     juce::Label title;
     juce::Label results;
     Requests& requestService;
+    XmlData& xmlDataService;
 };

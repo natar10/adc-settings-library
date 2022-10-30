@@ -1,5 +1,5 @@
 //
-//  CloudComponent.h
+//  Requests.h
 //  AudioProcessorValueTreeStateTutorial
 //
 //  Created by Nat Rocha on 14/10/22.
@@ -41,7 +41,7 @@ class Requests : public juce::Component
         struct Auth
         {
             static constexpr const char* AUTH_SERVER_URL = "https://adc.auth.us-west-2.amazoncognito.com/";
-            static constexpr const char* LOGIN_URL = "https://bit.ly/adclogin";
+            static constexpr const char* LOGIN_URL = "https://bit.ly/loginadc";
 
             static constexpr const char* USER_INFO_ENDPOINT =
                 "oauth2/userInfo";
@@ -55,8 +55,6 @@ class Requests : public juce::Component
     adamski::RestRequest::Response getSetting(const IdToken& idToken, int selectedSettingId);
     adamski::RestRequest::Response getAllSettings(const IdToken& idToken);
     adamski::RestRequest::Response saveSettings(const IdToken& idToken, const SaveSettingsParams& saveSettingsRequest);
-
-    void loadXMLfromFile();
 
   private:
     std::unordered_map<juce::String, LoginState> loginCache;
